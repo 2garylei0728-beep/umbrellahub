@@ -22,6 +22,8 @@ const char* SERVER_URL = "wss://你的網址/ws?role=device&secret=你的DEVICE_
 
 未設定（含 `your-server` 佔位符）時，ESP32 只跑本地備援，不會連中繼。
 
+公開版本不包含實際 Wi-Fi 憑證；燒錄前請同步修改草稿碼中的 `WIFI_SSID` 與 `WIFI_PASS`。請勿把真實 Wi-Fi 密碼或設備密鑰提交到公開儲存庫。
+
 ## 燒錄後驗證（序列埠監控器 115200）
 
 ```

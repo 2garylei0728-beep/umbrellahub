@@ -26,9 +26,9 @@
                              // 備用腳位：5 / 16 / 17(PSRAM 板勿用) / 18 / 19；開發板內置燈多為 GPIO2
 
 /* ===== 可調參數 ===== */
-/* --- 校園 WiFi --- */
-const char* WIFI_SSID = "FCT_GUEST";
-const char* WIFI_PASS = "fct28831980";
+/* --- WiFi：公開版本請在燒錄前填入自己的網絡設定 --- */
+const char* WIFI_SSID = "YOUR_WIFI_SSID";
+const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
 /* --- 中繼伺服器（部署網站後，把網址貼到這裡；格式：
      wss://主機/ws?role=device&secret=DEVICE_SECRET，secret 必須與伺服器相同）--- */
 const char* SERVER_URL = "wss://your-server.example.com/ws?role=device&secret=change-me-device-secret";
