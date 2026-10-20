@@ -12,6 +12,9 @@ let msgId = 0;
 let lastStatus = { online: false, free: 8, total: 8, busy: false, cur: 1, codes: [] };
 const pending = new Map();   // id → { resolve, timer }
 let idleResolvers = [];      // 等待 busy 結束的 promise
+let actionPending = false;
+let actionButton = null;
+let actionButtonLabel = '';
 
 /* ---------- 連線 ---------- */
 function setConn(cls, text) {
@@ -34,6 +37,12 @@ function connect() {
   ws.onclose = () => {
     wsOpen = false;
     failAllPending('與伺服器斷開，請稍後再試');
+    if (actionPending) {
+      actionPending = false;
+      restoreActionButton();
+      setActionState('error', '連線中斷', '正在重新連線，請稍後再試。');
+      renderStatus();
+    }
     setConn('', '重新連接中…');
     startStatusPoll();
     setTimeout(connect, reconnectDelay);
@@ -73,8 +82,12 @@ function renderStatus() {
   const busyTxt = lastStatus.busy ? '（櫃子運作中…）' : '';
   $('st').textContent = '空格：' + lastStatus.free + ' / ' + lastStatus.total + busyTxt +
     (lastStatus.online ? '' : '　⚠️ 櫃子離線');
-  $('bs').disabled = !lastStatus.online || lastStatus.busy;
-  $('bt').disabled = !lastStatus.online || lastStatus.busy;
+  const disabled = actionPending || !lastStatus.online || lastStatus.busy;
+  $('bs').disabled = disabled;
+  $('bt').disabled = disabled;
+  document.querySelectorAll('#aopen,#aclose,#aclear,#homeGrid button,#goGrid button').forEach((button) => {
+    button.disabled = disabled;
+  });
   renderSlotTable();
 }
 
@@ -91,14 +104,57 @@ function renderSlotTable() {
 }
 
 /* ---------- 動作 ---------- */
-function send(obj) {
+function setActionState(kind, title, detail, step) {
+  const box = $('actionState');
+  box.dataset.kind = kind || 'idle';
+  box.setAttribute('aria-busy', kind === 'sending' || kind === 'processing' ? 'true' : 'false');
+  $('actionTitle').textContent = title || '等待操作';
+  $('actionDetail').textContent = detail || '點擊按鈕後，這裡會顯示即時進度。';
+  document.querySelectorAll('.action-step').forEach((item) => {
+    const n = Number(item.dataset.step);
+    item.className = 'action-step' + (step >= n ? ' done' : step === n - 1 ? ' active' : '');
+  });
+}
+
+function restoreActionButton() {
+  if (actionButton) actionButton.textContent = actionButtonLabel;
+  actionButton = null;
+  actionButtonLabel = '';
+}
+
+function beginAction(button, title, detail) {
+  if (actionPending) return false;
+  actionPending = true;
+  actionButton = button || null;
+  actionButtonLabel = actionButton ? actionButton.textContent : '';
+  if (actionButton) actionButton.textContent = '處理中…';
+  setActionState('sending', title, detail, 0);
+  renderStatus();
+  return true;
+}
+
+function endAction(kind, title, detail, step) {
+  setActionState(kind, title, detail, step);
+  actionPending = false;
+  restoreActionButton();
+  renderStatus();
+}
+
+function send(obj, onSent) {
   return new Promise((resolve, reject) => {
     if (!wsOpen) { reject(new Error('offline')); return; }
     const id = ++msgId;
     obj.id = id;
     const timer = setTimeout(() => { pending.delete(id); reject(new Error('timeout')); }, 25000);
     pending.set(id, { resolve, timer });
-    ws.send(JSON.stringify(obj));
+    try {
+      ws.send(JSON.stringify(obj));
+      if (onSent) onSent();
+    } catch (e) {
+      clearTimeout(timer);
+      pending.delete(id);
+      reject(e);
+    }
   });
 }
 
@@ -128,16 +184,27 @@ function flushIdle() {
 }
 
 async function store() {
-  setMsg('請稍候…');
+  if (!beginAction($('bs'), '正在發送存傘指令…', '正在把操作送到控制伺服器。')) return;
+  setMsg('正在發送存傘指令…');
   try {
-    const r = await send({ t: 'store' });
-    if (!r.ok) { setMsg(r.msg || '存傘失敗'); return; }
+    const r = await send({ t: 'store' }, () => {
+      setActionState('processing', '指令已送出，櫃子處理中…', '正在傳送至雨傘櫃，請勿重複點擊。', 1);
+      setMsg('指令已送出，櫃子正在處理…');
+    });
+    setActionState('processing', '櫃子已回應，正在確認…', '正在確認格位與門片狀態。', 2);
+    if (!r.ok) {
+      endAction('error', '存傘未完成', r.msg || '櫃子拒絕了這次操作。', 2);
+      setMsg(r.msg || '存傘失敗');
+      return;
+    }
     try { localStorage.setItem('umbrellaCode', r.code); } catch (e) { /* 忽略 */ }
     $('cd').value = r.code;
     setMsgHTML('第 ' + r.slot + ' 格開門中，請放入雨傘<br>你的取傘碼<div class="big">' + r.code + '</div>請截圖或抄下');
     await waitIdle();
-    setMsgHTML($('m').innerHTML + '<br>✅ 完成，門已關閉');
+    endAction('completed', '存傘完成', '取傘碼已顯示，門已關閉。', 3);
+    setMsgHTML($('m').innerHTML + '<br><strong>操作完成，門已關閉。</strong>');
   } catch (e) {
+    endAction('error', e.message === 'timeout' ? '櫃子回應逾時' : '存傘未完成', e.message === 'timeout' ? '請查看櫃子狀態後再試。' : '連線中斷，請稍後再試。', 2);
     setMsg(e.message === 'timeout' ? '櫃子沒有回應，請重新整理再試' : '連線中斷，請稍後再試');
   }
 }
@@ -145,16 +212,27 @@ async function store() {
 async function take() {
   const code = $('cd').value.trim();
   if (!/^\d{4}$/.test(code)) { setMsg('請輸入 4 位取傘碼'); return; }
-  setMsg('請稍候…');
+  if (!beginAction($('bt'), '正在發送取傘指令…', '正在把取傘碼送到控制伺服器。')) return;
+  setMsg('正在發送取傘指令…');
   try {
-    const r = await send({ t: 'take', code });
-    if (!r.ok) { setMsg(r.msg || '取傘失敗'); return; }
+    const r = await send({ t: 'take', code }, () => {
+      setActionState('processing', '指令已送出，櫃子處理中…', '正在驗證取傘碼並傳送至雨傘櫃。', 1);
+      setMsg('指令已送出，櫃子正在處理…');
+    });
+    setActionState('processing', '櫃子已回應，正在確認…', '正在確認門片與格位狀態。', 2);
+    if (!r.ok) {
+      endAction('error', '取傘未完成', r.msg || '櫃子拒絕了這次操作。', 2);
+      setMsg(r.msg || '取傘失敗');
+      return;
+    }
     try { localStorage.removeItem('umbrellaCode'); } catch (e) { /* 忽略 */ }
     setMsg('第 ' + r.slot + ' 格開門中，請取走雨傘');
     await waitIdle();
-    setMsg('✅ 完成，歡迎再用');
+    endAction('completed', '取傘完成', '雨傘櫃已完成這次操作。', 3);
+    setMsg('完成，歡迎再用');
     $('cd').value = '';
   } catch (e) {
+    endAction('error', e.message === 'timeout' ? '櫃子回應逾時' : '取傘未完成', e.message === 'timeout' ? '請查看櫃子狀態後再試。' : '連線中斷，請稍後再試。', 2);
     setMsg(e.message === 'timeout' ? '櫃子沒有回應，請重新整理再試' : '連線中斷，請稍後再試');
   }
 }
@@ -162,14 +240,23 @@ async function take() {
 /* ---------- 管理 ---------- */
 function adminKey() { return $('ak').value.trim() || localStorage.getItem('umbrellaAdminKey') || ''; }
 
-async function admin(act, n) {
+async function admin(act, n, button, label) {
+  if (!beginAction(button, '正在發送' + label + '指令…', '正在把管理操作送到控制伺服器。')) {
+    return { ok: false, msg: '目前已有其他操作進行中' };
+  }
   try {
-    const r = await send({ t: 'admin', key: adminKey(), act, n: n || 0 });
+    const r = await send({ t: 'admin', key: adminKey(), act, n: n || 0 }, () => {
+      setActionState('processing', '指令已送出，櫃子處理中…', '正在傳送管理指令，請勿重複點擊。', 1);
+    });
     if (r.ok) {
       try { localStorage.setItem('umbrellaAdminKey', adminKey()); } catch (e) { /* 忽略 */ }
+      endAction('completed', label + '完成', r.msg || '櫃子已完成操作。', 3);
+    } else {
+      endAction('error', label + '未完成', r.msg || '櫃子拒絕了這次操作。', 2);
     }
     return r;
   } catch (e) {
+    endAction('error', label + '未完成', e.message === 'timeout' ? '櫃子回應逾時，請查看狀態後再試。' : '連線中斷，請稍後再試。', 2);
     return { ok: false, msg: '連線中斷' };
   }
 }
@@ -201,21 +288,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
   $('bs').addEventListener('click', store);
   $('bt').addEventListener('click', take);
-  $('aopen').addEventListener('click', async () => { const r = await admin('open'); setMsg(r.ok ? '門已開' : (r.msg || '失敗')); });
-  $('aclose').addEventListener('click', async () => { const r = await admin('close'); setMsg(r.ok ? '門已關' : (r.msg || '失敗')); });
-  $('aclear').addEventListener('click', async () => { const r = await admin('clear'); setMsg(r.ok ? '已清空全部格位' : (r.msg || '失敗')); });
+  $('aopen').addEventListener('click', async () => { const r = await admin('open', 0, $('aopen'), '開門'); setMsg(r.ok ? '門已開' : (r.msg || '失敗')); });
+  $('aclose').addEventListener('click', async () => { const r = await admin('close', 0, $('aclose'), '關門'); setMsg(r.ok ? '門已關' : (r.msg || '失敗')); });
+  $('aclear').addEventListener('click', async () => { const r = await admin('clear', 0, $('aclear'), '清空'); setMsg(r.ok ? '已清空全部格位' : (r.msg || '失敗')); });
 
   for (let i = 1; i <= 8; i++) {
     const b1 = document.createElement('button');
-    b1.className = 'mini';
+    b1.className = 'mini admin-action';
     b1.textContent = i;
-    b1.addEventListener('click', async () => { const r = await admin('home', i); setMsg(r.ok ? ('已對位：第 ' + i + ' 格') : (r.msg || '失敗')); });
+    b1.addEventListener('click', async () => { const r = await admin('home', i, b1, '對位第 ' + i + ' 格'); setMsg(r.ok ? ('已對位：第 ' + i + ' 格') : (r.msg || '失敗')); });
     $('homeGrid').appendChild(b1);
 
     const b2 = document.createElement('button');
-    b2.className = 'mini';
+    b2.className = 'mini admin-action';
     b2.textContent = i;
-    b2.addEventListener('click', async () => { const r = await admin('go', i); setMsg(r.ok ? ('已轉到第 ' + i + ' 格') : (r.msg || '失敗')); });
+    b2.addEventListener('click', async () => { const r = await admin('go', i, b2, '轉到第 ' + i + ' 格'); setMsg(r.ok ? ('已轉到第 ' + i + ' 格') : (r.msg || '失敗')); });
     $('goGrid').appendChild(b2);
   }
 

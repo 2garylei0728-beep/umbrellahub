@@ -25,6 +25,23 @@
   input.k{letter-spacing:2px;font-size:16px;text-align:left}
   #st{font-size:16px;min-height:24px;color:#33414f}
   #m{font-size:16px;min-height:24px;margin-top:10px}
+  .action-state{display:flex;align-items:flex-start;gap:10px;margin-top:12px;padding:11px 12px;border:1px solid #dfe6ed;border-radius:10px;background:#f7f9fb;color:#33414f;transition:background .2s,border-color .2s}
+  .action-state[data-kind="sending"]{background:#eef6ff;border-color:#b8d8fb}
+  .action-state[data-kind="processing"]{background:#fff8e7;border-color:#f2d58a}
+  .action-state[data-kind="completed"]{background:#eef9f0;border-color:#b9e2c0}
+  .action-state[data-kind="error"]{background:#fff1f0;border-color:#f0b9b5}
+  .action-icon{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#dce6ef;color:#516273;font-size:13px;font-weight:700;flex:0 0 auto}
+  .action-state[data-kind="sending"] .action-icon,.action-state[data-kind="processing"] .action-icon{background:#1f6feb;color:#fff;animation:pulse 1.2s ease-in-out infinite}
+  .action-state[data-kind="completed"] .action-icon{background:#2e9d4d;color:#fff}
+  .action-state[data-kind="error"] .action-icon{background:#c83c35;color:#fff}
+  .action-copy{min-width:0;flex:1}
+  .action-title{display:block;font-size:14px;font-weight:700;line-height:1.35}
+  .action-detail{display:block;margin-top:3px;font-size:12px;color:#718091;line-height:1.45}
+  .action-steps{display:flex;gap:4px;margin-top:8px;font-size:11px;color:#9aa7b4}
+  .action-step{padding:3px 7px;border-radius:999px;background:#e8edf2}
+  .action-step.active{background:#d7e9fc;color:#185b9f;font-weight:700}
+  .action-step.done{background:#d9efde;color:#26723b}
+  @keyframes pulse{50%{transform:scale(1.08);opacity:.72}}
   .big{font-size:40px;letter-spacing:8px;font-weight:700;text-align:center;margin:8px 0;color:#1f6feb}
   .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
   table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
@@ -47,6 +64,18 @@
   <div class="c">
     <h2>櫃子狀態</h2>
     <div id="st">讀取中…</div>
+    <div id="actionState" class="action-state" data-kind="idle" role="status" aria-live="polite" aria-atomic="true" aria-busy="false">
+      <div class="action-icon" aria-hidden="true">i</div>
+      <div class="action-copy">
+        <strong id="actionTitle" class="action-title">等待操作</strong>
+        <span id="actionDetail" class="action-detail">點擊按鈕後，這裡會顯示即時進度。</span>
+        <div class="action-steps" aria-hidden="true">
+          <span class="action-step" data-step="1">發送</span>
+          <span class="action-step" data-step="2">櫃子處理</span>
+          <span class="action-step" data-step="3">完成</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="c">
