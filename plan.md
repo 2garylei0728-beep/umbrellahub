@@ -8,6 +8,8 @@
 
 採用 Docker 容器發布，執行 `npm start` 並監聽 Manus 注入的 `PORT`。託管模式使用 Reserved／`always_on`，避免 ESP32 的 WSS 長連線因閒置縮放而中斷。
 
+穩定性優化加入單一飛行命令與最多 16 個待處理命令的佇列、45 秒命令逾時、設備斷線／替換時的完整清理、使用者斷線時取消尚未送出的操作，以及逾時後等待 ESP32 重連來隔離晚到回應。WebSocket 限制最大訊息大小、關閉不必要的壓縮並啟用 TCP no-delay；HTTP 伺服器也設定合理的 keep-alive 與 headers timeout。
+
 ## 專案結構
 
 - `server.js`：Express、健康端點、瀏覽器 WebSocket 與 ESP32 WebSocket 中繼。

@@ -21,8 +21,7 @@ ESP32 只需連上互聯網（家用 WiFi、手機熱點或校園 WiFi），透�
 這是一個標準 Node.js 專案（Express + ws），**需要支援 WebSocket 長連線的常駐 Node 環境**。
 
 ### ⭐ Manus（本專案的主要目標平台，詳見 `MANUS_DEPLOY.md`）
-把整個專案（或本 ZIP）交給 Manus，讓它建立網站並發布，**託管模式必須選 Reserved（預留實例）**——
-預設的 Autoscale 模式會縮放到零，會斷開 ESP32 的長連線。`MANUS_DEPLOY.md` 內有可直接複製給 Manus 的指令。
+把整個專案（或本 ZIP）交給 Manus，讓它建立網站並發布。最佳設定是 Reserved（預留實例）；若帳戶只能使用 Autoscale，ESP32 仍會自動重連，但閒置後第一次操作可能遇到冷啟動。
 
 ### Render（備選，可用 render.yaml 一鍵部署）
 1. 將本專案推到 Git 倉庫（或直接在 Render 後台連結）。
@@ -75,6 +74,8 @@ DEVICE_SECRET=test123 ADMIN_KEY=8888 npm start
 
 - **單設備設計**：同一把密鑰只允許一台 ESP32 在線，新裝置連入會踢掉舊連線。
 - **免費 tier 休眠**：Render 免費版約 15 分鐘無流量會休眠，下次連線需 30–60 秒喚醒；ESP32 會自動重連。在意喚醒時間可用 UptimeRobot 每 5 分鐘 ping `/healthz`，或改付費方案。
+- **伺服器穩定性**：網站操作會由伺服器序列化後逐一送給 ESP32，避免多個手機同時點擊造成命令交錯；每個命令有 45 秒逾時，設備斷線或逾時會清理佇列。逾時後需等 ESP32 重新連線，避免晚到回應誤套用到下一個操作。
+- **Autoscale 提醒**：Manus Autoscale 閒置時可能縮放；ESP32 韌體每 5 秒自動重連。需要完全不因縮放中斷的長連線時，請改用具備 Reserved／always-on 資格的託管方案。
 - **安全**：DEVICE_SECRET 與 ADMIN_KEY 請勿使用預設值；QR 一旦外流，知道 ADMIN_KEY 就能操作櫃子（與原本地版相同的安全級別）。
 - 斷電重啟後取傘碼不會遺失（存於 ESP32 快閃記憶體）。
 

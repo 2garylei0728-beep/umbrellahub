@@ -27,14 +27,14 @@ ws.on('open', () => {
 });
 
 ws.on('message', (raw) => {
-  let m;
-  try { m = JSON.parse(raw.toString()); } catch (e) { return; }
-  console.log('[mock-esp32] 收到指令:', JSON.stringify(m));
+  const command = raw.toString().trim();
+  if (command.startsWith('{')) return; // 忽略伺服器 hello
+  console.log('[mock-esp32] 收到指令:', command);
 
-  if (m.t === 'store') {
-    if (busy) { send({ t: 'result', id: m.id, ok: false, msg: '櫃子運作中，請稍後再試' }); return; }
+  if (command === 'store') {
+    if (busy) { send({ t: 'result', ok: false, msg: '櫃子運作中，請稍後再試' }); return; }
     const k = codes.findIndex(c => c === '');
-    if (k < 0) { send({ t: 'result', id: m.id, ok: false, msg: '櫃子已滿' }); return; }
+    if (k < 0) { send({ t: 'result', ok: false, msg: '櫃子已滿' }); return; }
     const code = String(nextCode++);
     codes[k] = code;
     busy = true;
@@ -42,39 +42,44 @@ ws.on('message', (raw) => {
     setTimeout(() => { // 模擬轉盤 + 開門 5 秒
       busy = false;
       pushStatus();
-      send({ t: 'result', id: m.id, ok: true, slot: k + 1, code });
+      send({ t: 'result', ok: true, slot: k + 1, code });
     }, 6000);
-  } else if (m.t === 'take') {
-    if (busy) { send({ t: 'result', id: m.id, ok: false, msg: '櫃子運作中，請稍後再試' }); return; }
-    const k = codes.findIndex(c => c === m.code);
-    if (k < 0) { send({ t: 'result', id: m.id, ok: false, msg: '取傘碼錯誤' }); return; }
+  } else if (command.startsWith('take ')) {
+    const code = command.slice(5).trim();
+    if (busy) { send({ t: 'result', ok: false, msg: '櫃子運作中，請稍後再試' }); return; }
+    const k = codes.findIndex(c => c === code);
+    if (k < 0) { send({ t: 'result', ok: false, msg: '取傘碼錯誤' }); return; }
     busy = true;
     pushStatus();
     setTimeout(() => {
       codes[k] = '';
       busy = false;
       pushStatus();
-      send({ t: 'result', id: m.id, ok: true, slot: k + 1 });
+      send({ t: 'result', ok: true, slot: k + 1 });
     }, 6000);
-  } else if (m.t === 'admin') {
-    if (busy) { send({ t: 'result', id: m.id, ok: false, msg: '櫃子運作中' }); return; }
-    if (m.act === 'open' || m.act === 'close') {
-      send({ t: 'result', id: m.id, ok: true, msg: m.act === 'open' ? '門已開' : '門已關' });
-    } else if (m.act === 'clear') {
+  } else if (command === 'open' || command === 'close') {
+    if (busy) { send({ t: 'result', ok: false, msg: '櫃子運作中' }); return; }
+    send({ t: 'result', ok: true, msg: command === 'open' ? '門已開' : '門已關' });
+  } else if (command === 'clear') {
+    if (busy) { send({ t: 'result', ok: false, msg: '櫃子運作中' }); return; }
       codes = new Array(SLOTS).fill('');
       pushStatus();
-      send({ t: 'result', id: m.id, ok: true, msg: '已清空全部格位' });
-    } else if (m.act === 'home' && m.n >= 1 && m.n <= SLOTS) {
-      cur = m.n;
+      send({ t: 'result', ok: true, msg: '已清空全部格位' });
+  } else if (command.startsWith('home ')) {
+      const n = Number(command.slice(5));
+      if (!Number.isInteger(n) || n < 1 || n > SLOTS) { send({ t: 'result', ok: false, msg: '格號必須是 1-' + SLOTS }); return; }
+      cur = n;
       pushStatus();
-      send({ t: 'result', id: m.id, ok: true, msg: '已對位：第 ' + m.n + ' 格' });
-    } else if (m.act === 'go' && m.n >= 1 && m.n <= SLOTS) {
+      send({ t: 'result', ok: true, msg: '已對位：第 ' + n + ' 格' });
+  } else if (command.startsWith('go ')) {
+      const n = Number(command.slice(3));
+      if (!Number.isInteger(n) || n < 1 || n > SLOTS) { send({ t: 'result', ok: false, msg: '格號必須是 1-' + SLOTS }); return; }
+      if (busy) { send({ t: 'result', ok: false, msg: '櫃子運作中' }); return; }
       busy = true;
       pushStatus();
-      setTimeout(() => { cur = m.n; busy = false; pushStatus(); send({ t: 'result', id: m.id, ok: true, msg: '已轉到第 ' + m.n + ' 格' }); }, 2000);
-    } else {
-      send({ t: 'result', id: m.id, ok: false, msg: '不支援的操作' });
-    }
+      setTimeout(() => { cur = n; busy = false; pushStatus(); send({ t: 'result', ok: true, msg: '已轉到第 ' + n + ' 格' }); }, 2000);
+  } else {
+    send({ t: 'result', ok: false, msg: '不支援的操作' });
   }
 });
 

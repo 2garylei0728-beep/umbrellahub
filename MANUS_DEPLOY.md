@@ -1,16 +1,15 @@
 # 部署到 Manus（專用指南）
 
-本專案（Node.js 中繼伺服器 + 手機網站）**可以直接託管在 Manus 上**，但有一個關鍵設定：
-**必須選擇 Reserved（預留實例）託管模式**，不能用預設的 Autoscale 模式。
+本專案（Node.js 中繼伺服器 + 手機網站）**可以直接託管在 Manus 上**。最佳設定是 Reserved（預留實例）；若帳戶只能使用 Autoscale，系統仍可運作，ESP32 會自動重連，但閒置後第一次操作可能遇到冷啟動。
 
 ## 為什麼必須選 Reserved 模式
 
 | 託管模式 | 運行方式 | WebSocket 長連線 |
 |---|---|---|
-| Autoscale（預設） | Google Cloud Run，無流量時縮放到零，有冷啟動 | ❌ 官方標註「不建議」——縮放到零會斷開 ESP32 的長連線 |
+| Autoscale（預設） | Google Cloud Run，無流量時縮放到零，有冷啟動 | ⚠️ 會中斷 ESP32 長連線；韌體每 5 秒自動重連 |
 | **Reserved（本專案要用）** | 常駐進程，不縮放、無冷啟動、無請求超時 | ✅ 官方明確支援：WebSocket 連線、背景進程、實時資料流 |
 
-費用：Reserved 按實際 CPU/記憶體/流量計費（閒置時很低），每個 Manus 帳戶每月有 **$10 免費額度**，本專案閒置用量遠低於此。
+Reserved 是否可用取決於 Manus 帳戶資格；Autoscale 則不需要 Reserved 資格。
 
 ## 一、給 Manus 的指令（直接複製貼上）
 
@@ -20,7 +19,7 @@
 > - `package.json`：依賴 express 與 ws
 >
 > 請用這個專案建立網站並發布。要求：
-> 1. **託管模式選擇 Reserved（預留實例）**，因為 ESP32 需要與伺服器保持 WebSocket 長連線，不能用會縮放到零的 Autoscale 模式。
+> 1. **若帳戶具備資格，託管模式選擇 Reserved（預留實例）**；若只能使用 Autoscale，ESP32 仍會透過每 5 秒自動重連恢復連線。
 > 2. 建置指令 `npm install`，啟動指令 `npm start`，服務埠讀取環境變數 `PORT`。
 > 3. 設定環境變數：`DEVICE_SECRET=請幫我產生一組隨機密鑰`、`ADMIN_KEY=8888`。
 > 4. 保留 `/healthz` 健康檢查端點。
