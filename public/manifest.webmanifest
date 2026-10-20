@@ -1,0 +1,15 @@
+{
+  "name": "智能旋轉式雨傘寄存櫃",
+  "short_name": "雨傘櫃",
+  "description": "手機開網頁即可存傘、取傘，無需連接設備熱點",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6f8",
+  "theme_color": "#1f6feb",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

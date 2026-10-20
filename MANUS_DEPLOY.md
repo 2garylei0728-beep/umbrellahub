@@ -15,8 +15,8 @@ Reserved 是否可用取決於 Manus 帳戶資格；Autoscale 則不需要 Reser
 
 > 我上傳了一個 Node.js 專案（雨傘櫃在線控制系統），結構是：
 > - `server.js`：Express + WebSocket 中繼伺服器，同時託管靜態網站
-> - `public/`：手機控制網頁（index.html + app.js）
-> - `package.json`：依賴 express 與 ws
+> - `public/`：手機控制網頁（index.html + app.js + PWA 資源）
+> - `package.json`：依賴 express、ws 與 compression
 >
 > 請用這個專案建立網站並發布。要求：
 > 1. **若帳戶具備資格，託管模式選擇 Reserved（預留實例）**；若只能使用 Autoscale，ESP32 仍會透過每 5 秒自動重連恢復連線。
@@ -24,6 +24,8 @@ Reserved 是否可用取決於 Manus 帳戶資格；Autoscale 則不需要 Reser
 > 3. 設定環境變數：`DEVICE_SECRET=請幫我產生一組隨機密鑰`、`ADMIN_KEY=8888`。
 > 4. 保留 `/healthz` 健康檢查端點。
 > 5. 發布後把**網站網址**和**DEVICE_SECRET 的值**告訴我。
+
+伺服器會把瀏覽器操作序列化後轉成 ESP32 既有的純文字命令，並使用 `CMD_GRACE_MS`（預設 8000）與 `DEVICE_TIMEOUT_MS`（預設 60000）處理 Autoscale 短暫斷線及僵屍連線。
 
 如果 Manus 詢問用途，補充說明：這是一個 IoT 中繼伺服器，一台 ESP32（雨傘寄存櫃）通過 WSS 長連線連入，手機用戶通過網站下達存傘/取傘指令，伺服器負責轉發與狀態廣播。
 

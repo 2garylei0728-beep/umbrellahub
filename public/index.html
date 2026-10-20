@@ -3,105 +3,190 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f151c" media="(prefers-color-scheme: dark)">
+<meta name="description" content="智能旋轉式雨傘寄存櫃在線控制：手機開網頁即可存傘、取傘">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>智能雨傘寄存櫃</title>
 <style>
-  *{box-sizing:border-box}
-  body{font-family:-apple-system,"Ping Fang TC","Microsoft YaHei",sans-serif;margin:0;padding:16px;background:#f4f6f8;color:#1b2733;-webkit-text-size-adjust:100%}
-  .wrap{max-width:520px;margin:0 auto}
-  header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
-  h1{font-size:20px;margin:0}
-  .pill{font-size:13px;padding:4px 10px;border-radius:999px;background:#e3e8ee;color:#5a6b7b;white-space:nowrap}
-  .pill.on{background:#e6f6e6;color:#1d7a1d}
-  .pill.off{background:#fde8e8;color:#b3261e}
-  .c{background:#fff;border-radius:12px;padding:14px;margin:12px 0;box-shadow:0 1px 3px #0002}
-  .c h2{font-size:15px;margin:0 0 8px;color:#445}
-  button{width:100%;padding:14px;font-size:18px;border:0;border-radius:10px;background:#1f6feb;color:#fff;margin-top:8px;cursor:pointer}
-  button:active{filter:brightness(.92)}
-  button:disabled{background:#9aa;cursor:not-allowed}
-  button.ghost{background:#eef2f6;color:#33414f;font-size:14px;padding:10px}
-  button.mini{background:#eef2f6;color:#33414f;font-size:13px;padding:8px 4px;margin-top:0;width:auto;min-width:44px}
-  button.mini.sel{background:#1f6feb;color:#fff}
-  input{width:100%;box-sizing:border-box;padding:12px;font-size:20px;text-align:center;border:1px solid #ccd;border-radius:10px;letter-spacing:6px}
-  input.k{letter-spacing:2px;font-size:16px;text-align:left}
-  #st{font-size:16px;min-height:24px;color:#33414f}
-  #m{font-size:16px;min-height:24px;margin-top:10px}
-  .action-state{display:flex;align-items:flex-start;gap:10px;margin-top:12px;padding:11px 12px;border:1px solid #dfe6ed;border-radius:10px;background:#f7f9fb;color:#33414f;transition:background .2s,border-color .2s}
-  .action-state[data-kind="sending"]{background:#eef6ff;border-color:#b8d8fb}
-  .action-state[data-kind="processing"]{background:#fff8e7;border-color:#f2d58a}
-  .action-state[data-kind="completed"]{background:#eef9f0;border-color:#b9e2c0}
-  .action-state[data-kind="error"]{background:#fff1f0;border-color:#f0b9b5}
-  .action-icon{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#dce6ef;color:#516273;font-size:13px;font-weight:700;flex:0 0 auto}
-  .action-state[data-kind="sending"] .action-icon,.action-state[data-kind="processing"] .action-icon{background:#1f6feb;color:#fff;animation:pulse 1.2s ease-in-out infinite}
-  .action-state[data-kind="completed"] .action-icon{background:#2e9d4d;color:#fff}
-  .action-state[data-kind="error"] .action-icon{background:#c83c35;color:#fff}
-  .action-copy{min-width:0;flex:1}
-  .action-title{display:block;font-size:14px;font-weight:700;line-height:1.35}
-  .action-detail{display:block;margin-top:3px;font-size:12px;color:#718091;line-height:1.45}
-  .action-steps{display:flex;gap:4px;margin-top:8px;font-size:11px;color:#9aa7b4}
-  .action-step{padding:3px 7px;border-radius:999px;background:#e8edf2}
-  .action-step.active{background:#d7e9fc;color:#185b9f;font-weight:700}
-  .action-step.done{background:#d9efde;color:#26723b}
-  @keyframes pulse{50%{transform:scale(1.08);opacity:.72}}
-  .big{font-size:40px;letter-spacing:8px;font-weight:700;text-align:center;margin:8px 0;color:#1f6feb}
-  .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
-  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
-  td,th{border:1px solid #dde3ea;padding:6px 8px;text-align:center}
-  th{background:#f2f5f8}
-  details summary{cursor:pointer;font-size:14px;color:#5a6b7b;padding:4px 0}
+  :root{
+    --bg:#f4f6f8; --card:#ffffff; --text:#1b2733; --muted:#5a6b7b; --line:#dde3ea;
+    --primary:#1f6feb; --primary-t:#ffffff;
+    --ok:#1d7a1d; --ok-bg:#e6f6e6; --err:#b3261e; --err-bg:#fde8e8;
+    --ghost:#eef2f6; --ghost-t:#33414f; --warn-bg:#fff7e0; --warn-t:#8a6116;
+    --shadow:0 1px 3px #0002; --radius:14px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0f151c; --card:#1a232e; --text:#e8eef4; --muted:#93a3b3; --line:#2c3a48;
+      --primary:#4d8ef7; --primary-t:#0b1220;
+      --ok:#6bd06b; --ok-bg:#17301c; --err:#ff9e94; --err-bg:#3d1c1a;
+      --ghost:#24303d; --ghost-t:#cfdae5; --warn-bg:#3a2f16; --warn-t:#f0c674;
+      --shadow:0 1px 3px #0006;
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Ping Fang TC","Noto Sans TC","Microsoft YaHei",sans-serif;
+    margin:0;padding:calc(12px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+    background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%;
+    min-height:100%;display:flex;flex-direction:column;
+  }
+  .wrap{max-width:520px;margin:0 auto;width:100%;flex:1}
+  header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 12px}
+  h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.5px}
+  .pill{font-size:13px;padding:5px 12px;border-radius:999px;background:var(--ghost);color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:background .2s,color .2s}
+  .pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.8}
+  .pill.on{background:var(--ok-bg);color:var(--ok)}
+  .pill.off{background:var(--err-bg);color:var(--err)}
+  .pill.wait{background:var(--warn-bg);color:var(--warn-t)}
+  .pill.wait::before{animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.25}}
+
+  .c{background:var(--card);border-radius:var(--radius);padding:16px;margin:12px 0;box-shadow:var(--shadow);border:1px solid var(--line)}
+  .c h2{font-size:15px;margin:0 0 10px;color:var(--muted);font-weight:600;letter-spacing:1px}
+
+  /* 狀態卡 */
+  .stat-main{display:flex;align-items:center;gap:16px}
+  .stat-num{display:flex;align-items:baseline;gap:6px;min-width:88px}
+  .stat-num b{font-size:44px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .stat-num span{font-size:14px;color:var(--muted)}
+  .stat-side{flex:1;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted)}
+  .busy{color:var(--warn-t);background:var(--warn-bg);border-radius:8px;padding:6px 10px;font-weight:600}
+  .warn{margin-top:10px;background:var(--err-bg);color:var(--err);border-radius:8px;padding:8px 12px;font-size:14px}
+
+  /* 按鈕 */
+  button{width:100%;padding:15px;font-size:18px;font-weight:600;border:0;border-radius:12px;background:var(--primary);color:var(--primary-t);margin-top:8px;cursor:pointer;transition:transform .06s,filter .15s;touch-action:manipulation;min-height:52px}
+  button:active{transform:scale(.98);filter:brightness(.92)}
+  button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  button.ghost{background:var(--ghost);color:var(--ghost-t);font-size:14px;padding:11px;min-height:44px}
+  button.mini{background:var(--ghost);color:var(--ghost-t);font-size:13px;padding:9px 4px;margin-top:0;width:auto;min-width:44px;min-height:44px}
+  button.mini.sel{background:var(--primary);color:var(--primary-t)}
+  button.key{font-size:22px;padding:14px 0;margin-top:0;min-height:60px;background:var(--ghost);color:var(--text);font-variant-numeric:tabular-nums}
+  button.key.fn{font-size:15px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+  button.key.ok{background:var(--primary);color:var(--primary-t)}
   .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .row>button{flex:1;width:auto}
-  footer{font-size:12px;color:#8a97a5;text-align:center;margin:18px 0 8px;line-height:1.6}
-  .hint{font-size:13px;color:#8a97a5;margin-top:6px}
+
+  /* 取傘碼顯示框 */
+  .code-boxes{display:flex;gap:10px;justify-content:center;margin:6px 0 14px}
+  .code-boxes .box{width:60px;height:72px;border:2px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--bg);transition:border-color .15s}
+  .code-boxes .box.filled{border-color:var(--primary)}
+  .code-boxes.shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+  @media (prefers-reduced-motion:reduce){.code-boxes.shake{animation:none}}
+
+  /* 數字鍵盤 */
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+
+  /* 訊息區 */
+  .msg{font-size:15px;min-height:24px;margin-top:12px;line-height:1.5;color:var(--text)}
+  .msg:empty{min-height:0;margin-top:0}
+  .msg.ok{color:var(--ok)}
+  .msg.err{color:var(--err)}
+  .big{font-size:42px;letter-spacing:10px;font-weight:800;text-align:center;margin:10px 0 4px;color:var(--primary);font-variant-numeric:tabular-nums}
+
+  /* 結果卡 */
+  .result-card{border:1px solid var(--primary)}
+  .result-card .slot-line{font-size:14px;color:var(--muted);text-align:center}
+  .copy-row{display:flex;gap:8px;margin-top:10px}
+  .copy-row>button{flex:1}
+
+  .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+  td,th{border:1px solid var(--line);padding:7px 8px;text-align:center}
+  th{background:var(--bg);color:var(--muted);font-weight:600}
+  details summary{cursor:pointer;font-size:14px;color:var(--muted);padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px}
+  details summary::before{content:"▸";transition:transform .15s;display:inline-block}
+  details[open] summary::before{transform:rotate(90deg)}
+  input{width:100%;box-sizing:border-box;padding:12px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+  input:focus{outline:2px solid var(--primary);outline-offset:-1px}
+  .hint{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5}
+  footer{font-size:12px;color:var(--muted);text-align:center;margin:20px 0 8px;line-height:1.7}
+
+  /* Toast */
+  .toast-wrap{position:fixed;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top));z-index:99;display:flex;flex-direction:column;gap:8px;width:min(92vw,460px);pointer-events:none}
+  .toast{background:#1b2733;color:#fff;border-radius:10px;padding:11px 16px;font-size:14px;box-shadow:0 4px 16px #0004;opacity:0;translate:0 -8px;transition:opacity .25s,translate .25s;pointer-events:auto}
+  .toast.show{opacity:1;translate:0 0}
+  .toast.ok{background:var(--ok)}
+  .toast.err{background:var(--err)}
+  @media (prefers-color-scheme:dark){.toast{background:#2c3a48}}
+  .hidden{display:none !important}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>☂️ 智能雨傘寄存櫃</h1>
-    <span id="conn" class="pill">連接中…</span>
+    <span id="conn" class="pill wait" role="status">連接中…</span>
   </header>
 
-  <div class="c">
-    <h2>櫃子狀態</h2>
-    <div id="st">讀取中…</div>
-    <div id="actionState" class="action-state" data-kind="idle" role="status" aria-live="polite" aria-atomic="true" aria-busy="false">
-      <div class="action-icon" aria-hidden="true">i</div>
-      <div class="action-copy">
-        <strong id="actionTitle" class="action-title">等待操作</strong>
-        <span id="actionDetail" class="action-detail">點擊按鈕後，這裡會顯示即時進度。</span>
-        <div class="action-steps" aria-hidden="true">
-          <span class="action-step" data-step="1">發送</span>
-          <span class="action-step" data-step="2">櫃子處理</span>
-          <span class="action-step" data-step="3">完成</span>
-        </div>
+  <section class="c">
+    <div class="stat-main">
+      <div class="stat-num"><b id="free">–</b><span>個空位</span></div>
+      <div class="stat-side">
+        <div id="busy" class="busy hidden">⚙️ 櫃子運作中…</div>
+        <div id="slotInfo">取傘口對正：第 – 格</div>
       </div>
     </div>
-  </div>
+    <div id="offlineWarn" class="warn hidden">⚠️ 櫃子暫時離線，恢復後會自動重連</div>
+  </section>
 
-  <div class="c">
+  <section class="c">
     <h2>存傘</h2>
     <button id="bs">我要存傘</button>
-    <div class="hint">系統會找空格、轉盤到位、開門，並給你一組 4 位取傘碼</div>
-  </div>
+    <p class="hint">系統會自動找空格、轉盤到位、開門，並給你一組 4 位取傘碼</p>
+  </section>
 
-  <div class="c">
+  <section class="c">
     <h2>取傘</h2>
-    <input id="cd" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="4 位取傘碼" autocomplete="off">
-    <button id="bt">我要取傘</button>
-    <div id="m"></div>
-  </div>
+    <div id="codeBoxes" class="code-boxes" role="group" aria-label="4 位取傘碼">
+      <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+    </div>
+    <div id="keypad" class="keypad">
+      <button class="key" data-k="1">1</button>
+      <button class="key" data-k="2">2</button>
+      <button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button>
+      <button class="key" data-k="5">5</button>
+      <button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button>
+      <button class="key" data-k="8">8</button>
+      <button class="key" data-k="9">9</button>
+      <button class="key fn" data-k="del">刪除</button>
+      <button class="key" data-k="0">0</button>
+      <button class="key ok" data-k="ok">取傘</button>
+    </div>
+    <div id="m" class="msg" role="status" aria-live="polite"></div>
+  </section>
 
-  <div class="c">
+  <section class="c result-card hidden" id="resultCard">
+    <div class="slot-line" id="rcSlot"></div>
+    <div class="big" id="rcCode"></div>
+    <div class="hint" style="text-align:center">請截圖或抄下這組取傘碼（只會顯示一次）</div>
+    <div class="copy-row">
+      <button class="ghost" id="rcCopy">📋 複製取傘碼</button>
+      <button class="ghost" id="rcDone">知道了</button>
+    </div>
+  </section>
+
+  <section class="c">
     <details>
       <summary>管理／除錯（需要密碼）</summary>
       <div style="margin-top:10px">
-        <input id="ak" class="k" placeholder="管理密碼" autocomplete="off">
+        <input id="ak" placeholder="管理密碼" autocomplete="off" inputmode="text">
         <div class="row">
           <button class="ghost" id="aopen">開門</button>
           <button class="ghost" id="aclose">關門</button>
           <button class="ghost" id="aclear">清空全部</button>
         </div>
-        <div class="hint">對位（現在取傘口對正第幾格）：</div>
+        <div class="hint">對位（取傘口現在對正第幾格）：</div>
         <div class="grid" id="homeGrid"></div>
         <div class="hint">轉到指定格：</div>
         <div class="grid" id="goGrid"></div>
@@ -110,7 +195,7 @@
         </table>
       </div>
     </details>
-  </div>
+  </section>
 
   <footer>
     取傘碼只會顯示一次，請截圖或抄下<br>
@@ -118,6 +203,7 @@
   </footer>
 </div>
 
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
 <script src="app.js"></script>
 </body>
 </html>

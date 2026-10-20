@@ -65,6 +65,7 @@ DEVICE_SECRET=test123 ADMIN_KEY=8888 npm start
 ## 四、管理與除錯
 
 - 網站底部「管理／除錯」展開後輸入 `ADMIN_KEY`：開門、關門、清空全部、對位（home）、轉到指定格（go），並看各格取傘碼。
+- 前端 v2 提供手機數字鍵盤、深色模式、PWA 主畫面安裝、離線殼、Toast／震動回饋與斷線自動重連；網站連線中斷時，尚未送出的指令會在恢復後補送。
 - 健康檢查：`GET /healthz`（回傳設備在線狀態）、`GET /api/status`。
 - 櫃子一次只處理一個動作；網站會顯示「櫃子運作中」。
 - ESP32 端保留本地備援：連 `Umbrella` 熱點（密碼 12345678）開 `http://192.168.4.1`，以及序列埠指令（status / scan / led test / open / close / step / go / home / clear）。
@@ -85,7 +86,10 @@ DEVICE_SECRET=test123 ADMIN_KEY=8888 npm start
 ├── server.js            中繼伺服器（Express 靜態託管 + WebSocket 中繼）
 ├── public/
 │   ├── index.html       手機網頁（存傘/取傘/管理）
-│   └── app.js           前端邏輯（WebSocket + 斷線輪詢降級）
+│   ├── app.js           前端邏輯（WebSocket + 自動重連 + 離線緩衝）
+│   ├── sw.js             PWA Service Worker 離線殼
+│   ├── manifest.webmanifest  PWA 安裝資訊
+│   └── icon.svg          PWA 圖標
 ├── esp32-firmware/
 │   ├── umbrella_cabinet_online.ino   ESP32 草稿碼（v4.2 在線控制版：WPA2/WPA3 雙認證＋操作指示燈）
 │   └── README.md         燒錄說明（含指示燈接線、WPA3 兼容性說明）
