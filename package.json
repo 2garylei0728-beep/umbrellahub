@@ -1,0 +1,15 @@
+{
+  "name": "umbrella-cabinet-online",
+  "version": "1.0.0",
+  "private": true,
+  "description": "智能旋轉式雨傘寄存櫃的 HTTPS/WSS 在線控制中繼服務",
+  "type": "commonjs",
+  "packageManager": "npm@10.8.2",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}

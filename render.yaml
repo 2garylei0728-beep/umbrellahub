@@ -1,0 +1,14 @@
+# Render 一鍵部署配置（Blueprint）
+# 用法：將專案推到 Git 倉庫 → Render 後台 New → Blueprint → 選擇此倉庫
+services:
+  - type: web
+    name: umbrella-cabinet
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DEVICE_SECRET
+        generateValue: true   # 自動產生；請把值抄回 ESP32 草稿码 SERVER_URL
+      - key: ADMIN_KEY
+        value: "8888"         # 建議部署後改掉

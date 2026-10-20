@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>智能雨傘寄存櫃</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,"Ping Fang TC","Microsoft YaHei",sans-serif;margin:0;padding:16px;background:#f4f6f8;color:#1b2733;-webkit-text-size-adjust:100%}
+  .wrap{max-width:520px;margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+  h1{font-size:20px;margin:0}
+  .pill{font-size:13px;padding:4px 10px;border-radius:999px;background:#e3e8ee;color:#5a6b7b;white-space:nowrap}
+  .pill.on{background:#e6f6e6;color:#1d7a1d}
+  .pill.off{background:#fde8e8;color:#b3261e}
+  .c{background:#fff;border-radius:12px;padding:14px;margin:12px 0;box-shadow:0 1px 3px #0002}
+  .c h2{font-size:15px;margin:0 0 8px;color:#445}
+  button{width:100%;padding:14px;font-size:18px;border:0;border-radius:10px;background:#1f6feb;color:#fff;margin-top:8px;cursor:pointer}
+  button:active{filter:brightness(.92)}
+  button:disabled{background:#9aa;cursor:not-allowed}
+  button.ghost{background:#eef2f6;color:#33414f;font-size:14px;padding:10px}
+  button.mini{background:#eef2f6;color:#33414f;font-size:13px;padding:8px 4px;margin-top:0;width:auto;min-width:44px}
+  button.mini.sel{background:#1f6feb;color:#fff}
+  input{width:100%;box-sizing:border-box;padding:12px;font-size:20px;text-align:center;border:1px solid #ccd;border-radius:10px;letter-spacing:6px}
+  input.k{letter-spacing:2px;font-size:16px;text-align:left}
+  #st{font-size:16px;min-height:24px;color:#33414f}
+  #m{font-size:16px;min-height:24px;margin-top:10px}
+  .big{font-size:40px;letter-spacing:8px;font-weight:700;text-align:center;margin:8px 0;color:#1f6feb}
+  .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+  td,th{border:1px solid #dde3ea;padding:6px 8px;text-align:center}
+  th{background:#f2f5f8}
+  details summary{cursor:pointer;font-size:14px;color:#5a6b7b;padding:4px 0}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .row>button{flex:1;width:auto}
+  footer{font-size:12px;color:#8a97a5;text-align:center;margin:18px 0 8px;line-height:1.6}
+  .hint{font-size:13px;color:#8a97a5;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>☂️ 智能雨傘寄存櫃</h1>
+    <span id="conn" class="pill">連接中…</span>
+  </header>
+
+  <div class="c">
+    <h2>櫃子狀態</h2>
+    <div id="st">讀取中…</div>
+  </div>
+
+  <div class="c">
+    <h2>存傘</h2>
+    <button id="bs">我要存傘</button>
+    <div class="hint">系統會找空格、轉盤到位、開門，並給你一組 4 位取傘碼</div>
+  </div>
+
+  <div class="c">
+    <h2>取傘</h2>
+    <input id="cd" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="4 位取傘碼" autocomplete="off">
+    <button id="bt">我要取傘</button>
+    <div id="m"></div>
+  </div>
+
+  <div class="c">
+    <details>
+      <summary>管理／除錯（需要密碼）</summary>
+      <div style="margin-top:10px">
+        <input id="ak" class="k" placeholder="管理密碼" autocomplete="off">
+        <div class="row">
+          <button class="ghost" id="aopen">開門</button>
+          <button class="ghost" id="aclose">關門</button>
+          <button class="ghost" id="aclear">清空全部</button>
+        </div>
+        <div class="hint">對位（現在取傘口對正第幾格）：</div>
+        <div class="grid" id="homeGrid"></div>
+        <div class="hint">轉到指定格：</div>
+        <div class="grid" id="goGrid"></div>
+        <table id="slotTable">
+          <tr><th>格位</th><th>取傘碼</th></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <footer>
+    取傘碼只會顯示一次，請截圖或抄下<br>
+    櫃子聯網後即可使用，無需連接設備熱點
+  </footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
