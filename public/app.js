@@ -233,6 +233,23 @@ function renderBoxes() {
     boxes[i].classList.toggle('filled', i < takeCode.length);
   }
 }
+function renderSavedCode(code) {
+  const card = $('savedCode');
+  if (!card) return;
+  const valid = /^\d{4}$/.test(code || '');
+  card.classList.toggle('hidden', !valid);
+  if (valid) $('savedCodeValue').textContent = code;
+}
+function useSavedCode() {
+  let saved = '';
+  try { saved = localStorage.getItem('umbrellaCode') || ''; } catch (e) { /* 忽略 */ }
+  if (!/^\d{4}$/.test(saved)) return;
+  takeCode = saved;
+  renderBoxes();
+  $('takeCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  toast('已填入本機保留的取傘碼', 'ok');
+  buzz(BUZZ.tap);
+}
 function shakeBoxes() {
   const el = $('codeBoxes');
   el.classList.remove('shake');
@@ -269,6 +286,7 @@ async function store() {
     const r = await send({ t: 'store' });
     if (!r.ok) { setMsg(r.msg || '存傘失敗', 'err'); buzz(BUZZ.err); return; }
     try { localStorage.setItem('umbrellaCode', r.code); } catch (e) { /* 忽略 */ }
+    renderSavedCode(r.code);
     $('rcSlot').textContent = '已存入第 ' + r.slot + ' 格';
     $('rcCode').textContent = r.code;
     $('resultCard').classList.remove('hidden');
@@ -302,6 +320,7 @@ async function submitTake() {
       return;
     }
     try { localStorage.removeItem('umbrellaCode'); } catch (e) { /* 忽略 */ }
+    renderSavedCode('');
     setMsg('第 ' + r.slot + ' 格開門中，請取走雨傘');
     buzz(BUZZ.ok);
     await waitIdle();
@@ -384,12 +403,30 @@ async function copyCode() {
     ta.remove();
   }
 }
+async function shareCode() {
+  const code = $('rcCode').textContent;
+  if (!code) return;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: '雨傘櫃取傘碼', text: '我的雨傘櫃取傘碼是：' + code });
+      toast('已開啟分享', 'ok');
+    } else {
+      await copyCode();
+      toast('此裝置不支援分享，已改為複製', 'ok');
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') toast('分享未完成，取傘碼仍在本機保留', 'err');
+  }
+}
 
 /* ---------- 初始化 ---------- */
 window.addEventListener('DOMContentLoaded', () => {
   let saved = '';
   try { saved = localStorage.getItem('umbrellaCode') || ''; } catch (e) { /* 忽略 */ }
-  if (saved) setMsg('上次的取傘碼：' + saved + '（已為你保存在本機）');
+  if (saved) {
+    setMsg('上次的取傘碼已保存在本機，可按「一鍵填入」');
+    renderSavedCode(saved);
+  }
 
   try { $('ak').value = localStorage.getItem('umbrellaAdminKey') || ''; } catch (e) { /* 忽略 */ }
 
@@ -399,6 +436,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (k) keypadPress(k);
   });
   $('rcCopy').addEventListener('click', copyCode);
+  $('rcShare').addEventListener('click', shareCode);
+  $('useSavedCode').addEventListener('click', useSavedCode);
   $('rcDone').addEventListener('click', () => { hideResultCard(); setMsg(''); });
 
   $('aopen').addEventListener('click', async () => { const r = await admin('open'); setMsg(r.ok ? '門已開' : (r.msg || '失敗'), r.ok ? 'ok' : 'err'); });

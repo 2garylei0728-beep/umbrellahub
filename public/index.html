@@ -39,6 +39,10 @@
     min-height:100%;display:flex;flex-direction:column;
   }
   .wrap{max-width:520px;margin:0 auto;width:100%;flex:1}
+  .topnav{display:flex;gap:6px;overflow:auto;margin:0 -4px 12px;padding:2px 4px 4px;scrollbar-width:none}
+  .topnav::-webkit-scrollbar{display:none}
+  .topnav a{flex:0 0 auto;text-decoration:none;color:var(--muted);background:var(--ghost);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px;font-weight:600}
+  .topnav a:active{background:var(--primary);color:var(--primary-t)}
   header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 12px}
   h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.5px}
   .pill{font-size:13px;padding:5px 12px;border-radius:999px;background:var(--ghost);color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:background .2s,color .2s}
@@ -97,6 +101,9 @@
   .result-card .slot-line{font-size:14px;color:var(--muted);text-align:center}
   .copy-row{display:flex;gap:8px;margin-top:10px}
   .copy-row>button{flex:1}
+  .saved-code{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--warn-bg);color:var(--warn-t);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:14px}
+  .saved-code strong{font-size:20px;letter-spacing:4px;font-variant-numeric:tabular-nums}
+  .saved-code button{flex:0 0 auto;margin:0;min-height:40px;width:auto;padding:8px 12px;font-size:14px}
 
   .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
   table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
@@ -122,12 +129,15 @@
 </head>
 <body>
 <div class="wrap">
+  <nav class="topnav" aria-label="頁面導覽">
+    <a href="#statusCard">櫃況</a><a href="#storeCard">存傘</a><a href="#takeCard">取傘</a><a href="#adminCard">管理</a>
+  </nav>
   <header>
     <h1>☂️ 智能雨傘寄存櫃</h1>
     <span id="conn" class="pill wait" role="status">連接中…</span>
   </header>
 
-  <section class="c">
+  <section class="c" id="statusCard">
     <div class="stat-main">
       <div class="stat-num"><b id="free">–</b><span>個空位</span></div>
       <div class="stat-side">
@@ -138,14 +148,18 @@
     <div id="offlineWarn" class="warn hidden">⚠️ 櫃子暫時離線，恢復後會自動重連</div>
   </section>
 
-  <section class="c">
+  <section class="c" id="storeCard">
     <h2>存傘</h2>
     <button id="bs">我要存傘</button>
     <p class="hint">系統會自動找空格、轉盤到位、開門，並給你一組 4 位取傘碼</p>
   </section>
 
-  <section class="c">
+  <section class="c" id="takeCard">
     <h2>取傘</h2>
+    <div id="savedCode" class="saved-code hidden" role="status">
+      <span>本機保留的取傘碼：<strong id="savedCodeValue"></strong></span>
+      <button class="ghost" id="useSavedCode">一鍵填入</button>
+    </div>
     <div id="codeBoxes" class="code-boxes" role="group" aria-label="4 位取傘碼">
       <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
     </div>
@@ -176,7 +190,7 @@
     </div>
   </section>
 
-  <section class="c">
+  <section class="c" id="adminCard">
     <details>
       <summary>管理／除錯（需要密碼）</summary>
       <div style="margin-top:10px">
