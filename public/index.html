@@ -140,7 +140,7 @@
 <body>
 <div class="wrap">
   <nav class="topnav" aria-label="頁面導覽">
-    <a href="#statusCard">櫃況</a><a href="#storeCard">存傘</a><a href="#takeCard">取傘</a><a href="#adminCard">管理</a>
+    <a href="#statusCard">櫃況</a><a href="#storeCard">存傘</a><a href="#takeCard">取傘</a><a href="#adminGate">管理</a>
   </nav>
   <header>
     <h1>☂️ 智能雨傘寄存櫃</h1>
@@ -190,29 +190,29 @@
     <div id="m" class="msg" role="status" aria-live="polite"></div>
   </section>
 
-  <section class="c">
+  <section class="c admin-gate" id="adminGate">
+    <h2>管理員功能</h2>
+    <p class="hint">輸入管理密碼後解鎖管理／除錯與即時指令監控。</p>
+    <input id="ak" placeholder="管理密碼" autocomplete="current-password" inputmode="text" type="password">
+    <div class="row">
+      <button class="ghost" id="adminUnlock">解鎖管理員功能</button>
+      <button class="ghost hidden" id="adminLock">重新鎖定</button>
+    </div>
+    <div id="adminAuthMsg" class="msg" role="status" aria-live="polite"></div>
+  </section>
+
+  <div id="adminPanel" class="hidden">
+  <section class="c" id="monitorCard">
     <h2>📡 即時指令監控</h2>
     <div class="hint">這裡顯示網站指令轉送給 ESP32 的實際文字命令與設備回執——有「🔀 ESP32」和「🟢/🔴 回執」交替出現，就代表櫃子正常運作</div>
     <div id="cmdLog" class="cmdlog" aria-live="polite"><div class="empty">等待指令…（在手機上按存傘／取傘，這裡會即時顯示）</div></div>
     <div class="row"><button class="ghost" id="cmdClear">清空記錄</button></div>
   </section>
 
-  <section class="c result-card hidden" id="resultCard">
-    <div class="slot-line" id="rcSlot"></div>
-    <div class="big" id="rcCode"></div>
-    <div class="hint" style="text-align:center">請截圖或抄下這組取傘碼（只會顯示一次）</div>
-    <div class="copy-row">
-      <button class="ghost" id="rcCopy">📋 複製取傘碼</button>
-      <button class="ghost" id="rcShare">分享取傘碼</button>
-      <button class="ghost" id="rcDone">知道了</button>
-    </div>
-  </section>
-
   <section class="c" id="adminCard">
     <details>
-      <summary>管理／除錯（需要密碼）</summary>
+      <summary>管理／除錯</summary>
       <div style="margin-top:10px">
-        <input id="ak" placeholder="管理密碼" autocomplete="off" inputmode="text">
         <div class="row">
           <button class="ghost" id="aopen">開門</button>
           <button class="ghost" id="aclose">關門</button>
@@ -227,6 +227,18 @@
         </table>
       </div>
     </details>
+  </section>
+  </div>
+
+  <section class="c result-card hidden" id="resultCard">
+    <div class="slot-line" id="rcSlot"></div>
+    <div class="big" id="rcCode"></div>
+    <div class="hint" style="text-align:center">請截圖或抄下這組取傘碼（只會顯示一次）</div>
+    <div class="copy-row">
+      <button class="ghost" id="rcCopy">📋 複製取傘碼</button>
+      <button class="ghost" id="rcShare">分享取傘碼</button>
+      <button class="ghost" id="rcDone">知道了</button>
+    </div>
   </section>
 
   <footer>

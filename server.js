@@ -398,6 +398,12 @@ wss.on('connection', (ws, req) => {
     const id = message.id;
     if (!Number.isInteger(id)) return;
 
+    if (message.t === 'admin_auth') {
+      const ok = String(message.key || '') === ADMIN_KEY;
+      safeSend(ws, { t: 'result', id, ok, msg: ok ? '管理密碼正確' : '管理密碼錯誤' });
+      return;
+    }
+
     if (message.t === 'store') {
       submitCommand(ws, { t: 'store', id });
       return;

@@ -35,6 +35,8 @@ const pending = new Map();   // id → { resolve, reject, timer }
 const buffer = [];           // 離線緩衝的指令（恢復後補發）
 let idleResolvers = [];
 let takeCode = '';           // 取傘碼輸入
+let adminSessionKey = '';
+let adminUnlocked = false;
 
 /* ---------- Toast ---------- */
 function toast(msg, type, ms) {
@@ -203,7 +205,7 @@ function handle(m) {
 let cmdLogCount = 0;
 function appendCmdLog(m) {
   const box = $('cmdLog');
-  if (!box) return;
+  if (!adminUnlocked || !box) return;
   const empty = box.querySelector('.empty');
   if (empty) empty.remove();
   const now = new Date();
@@ -363,13 +365,63 @@ async function submitTake() {
 }
 
 /* ---------- 管理 ---------- */
-function adminKey() { return $('ak').value.trim() || localStorage.getItem('umbrellaAdminKey') || ''; }
+function adminKey() { return adminSessionKey; }
+
+async function unlockAdmin() {
+  const key = $('ak').value.trim();
+  if (!key) {
+    $('adminAuthMsg').textContent = '請先輸入管理密碼';
+    $('adminAuthMsg').className = 'msg err';
+    return;
+  }
+  $('adminUnlock').disabled = true;
+  $('adminAuthMsg').textContent = '驗證中…';
+  $('adminAuthMsg').className = 'msg';
+  try {
+    const r = await send({ t: 'admin_auth', key });
+    if (!r.ok) {
+      $('adminAuthMsg').textContent = r.msg || '管理密碼錯誤';
+      $('adminAuthMsg').className = 'msg err';
+      buzz(BUZZ.err);
+      return;
+    }
+    adminSessionKey = key;
+    adminUnlocked = true;
+    $('adminPanel').classList.remove('hidden');
+    $('adminUnlock').classList.add('hidden');
+    $('adminLock').classList.remove('hidden');
+    $('ak').disabled = true;
+    $('adminAuthMsg').textContent = '已解鎖管理員功能';
+    $('adminAuthMsg').className = 'msg ok';
+    toast('管理員功能已解鎖', 'ok');
+    buzz(BUZZ.ok);
+  } catch (e) {
+    $('adminAuthMsg').textContent = '連線中斷，請稍後再試';
+    $('adminAuthMsg').className = 'msg err';
+    buzz(BUZZ.err);
+  } finally {
+    if (!adminUnlocked) $('adminUnlock').disabled = false;
+  }
+}
+
+function lockAdmin() {
+  adminSessionKey = '';
+  adminUnlocked = false;
+  $('adminPanel').classList.add('hidden');
+  $('adminUnlock').classList.remove('hidden');
+  $('adminUnlock').disabled = false;
+  $('adminLock').classList.add('hidden');
+  $('ak').disabled = false;
+  $('ak').value = '';
+  $('adminAuthMsg').textContent = '管理員功能已鎖定';
+  $('adminAuthMsg').className = 'msg';
+}
 
 async function admin(act, n) {
+  if (!adminUnlocked) return { ok: false, msg: '請先解鎖管理員功能' };
   try {
     const r = await send({ t: 'admin', key: adminKey(), act, n: n || 0 });
     if (r.ok) {
-      try { localStorage.setItem('umbrellaAdminKey', adminKey()); } catch (e) { /* 忽略 */ }
       buzz(BUZZ.ok);
     } else {
       buzz(BUZZ.err);
@@ -457,8 +509,6 @@ window.addEventListener('DOMContentLoaded', () => {
     renderSavedCode(saved);
   }
 
-  try { $('ak').value = localStorage.getItem('umbrellaAdminKey') || ''; } catch (e) { /* 忽略 */ }
-
   $('bs').addEventListener('click', store);
   $('keypad').addEventListener('click', (e) => {
     const k = e.target && e.target.dataset ? e.target.dataset.k : null;
@@ -467,6 +517,11 @@ window.addEventListener('DOMContentLoaded', () => {
   $('rcCopy').addEventListener('click', copyCode);
   $('rcShare').addEventListener('click', shareCode);
   $('useSavedCode').addEventListener('click', useSavedCode);
+  $('adminUnlock').addEventListener('click', unlockAdmin);
+  $('adminLock').addEventListener('click', lockAdmin);
+  $('ak').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); unlockAdmin(); }
+  });
   $('rcDone').addEventListener('click', () => { hideResultCard(); setMsg(''); });
   $('cmdClear').addEventListener('click', () => {
     const box = $('cmdLog');
