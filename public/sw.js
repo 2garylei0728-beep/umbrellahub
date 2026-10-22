@@ -1,4 +1,4 @@
-/* 智能旋轉式雨僘寄存櫃 — Service Worker（PWA 離線殼）
+/* 智能旋轉式雨傘寄存櫃 — Service Worker（PWA 離線殼）
    策略：
    - 頁面導航（HTML）：網絡優先，失敗取離線殼（斷網也能開頁）
    - 靜態資源（app.js / icon / manifest）：緩存優先 + 背景更新（重複打開秒開）

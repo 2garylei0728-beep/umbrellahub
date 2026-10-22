@@ -1,4 +1,4 @@
-/* 智能旋轉式雨僘寄存櫃 — 網站前端邏輯 v2.0（行業交付標準）
+/* 智能旋轉式雨傘寄存櫃 — 網站前端邏輯 v2.0（行業交付標準）
    與中繼伺服器走 WebSocket（/ws?role=user），斷線時：
    ① 指數退避自動重連；② 離線期間的指令進入緩衝，恢復後自動補發；
    ③ 退化為 /api/status 輪詢（唯讀）顯示狀態。
@@ -34,7 +34,7 @@ function applyOnline(on) {
 const pending = new Map();   // id → { resolve, reject, timer }
 const buffer = [];           // 離線緩衝的指令（恢復後補發）
 let idleResolvers = [];
-let takeCode = '';           // 取僘碼輸入
+let takeCode = '';           // 取傘碼輸入
 
 /* ---------- Toast ---------- */
 function toast(msg, type, ms) {
@@ -234,7 +234,7 @@ function escapeHtml(s) {
 /* ---------- 渲染 ---------- */
 function renderStatus() {
   $('free').textContent = (effectiveOnline && lastStatus.online) ? lastStatus.free : '–';
-  $('slotInfo').textContent = '取\u50d8口對正：第 ' + lastStatus.cur + ' 格';
+  $('slotInfo').textContent = '取\u5098口對正：第 ' + lastStatus.cur + ' 格';
   $('busy').classList.toggle('hidden', !lastStatus.busy);
   $('offlineWarn').classList.toggle('hidden', !(wsOpen && !(effectiveOnline && lastStatus.online)));
   $('bs').disabled = !(effectiveOnline && lastStatus.online) || lastStatus.busy;
@@ -244,7 +244,7 @@ function renderStatus() {
 
 function renderSlotTable() {
   const t = $('slotTable');
-  let html = '<tr><th>格位</th><th>取\u50d8碼</th></tr>';
+  let html = '<tr><th>格位</th><th>取\u5098碼</th></tr>';
   const codes = lastStatus.codes || [];
   for (let i = 0; i < (lastStatus.total || 8); i++) {
     const c = codes[i];
@@ -254,7 +254,7 @@ function renderSlotTable() {
   t.innerHTML = html;
 }
 
-/* ---------- 取僘碼鍵盤 ---------- */
+/* ---------- 取傘碼鍵盤 ---------- */
 function renderBoxes() {
   const boxes = $('codeBoxes').children;
   for (let i = 0; i < 4; i++) {
@@ -313,7 +313,7 @@ async function store() {
   buzz(BUZZ.tap);
   try {
     const r = await send({ t: 'store' });
-    if (!r.ok) { setMsg(r.msg || '存\u50d8失敗', 'err'); buzz(BUZZ.err); return; }
+    if (!r.ok) { setMsg(r.msg || '存\u5098失敗', 'err'); buzz(BUZZ.err); return; }
     try { localStorage.setItem('umbrellaCode', r.code); } catch (e) { /* 忽略 */ }
     renderSavedCode(r.code);
     $('rcSlot').textContent = '已存入第 ' + r.slot + ' 格';
@@ -334,7 +334,7 @@ async function submitTake() {
   if (takeCode.length !== 4) {
     shakeBoxes();
     buzz(BUZZ.err);
-    toast('請輸入 4 位取\u50d8碼', 'err');
+    toast('請輸入 4 位取\u5098碼', 'err');
     return;
   }
   hideResultCard();
@@ -343,14 +343,14 @@ async function submitTake() {
   try {
     const r = await send({ t: 'take', code: takeCode });
     if (!r.ok) {
-      setMsg(r.msg || '取\u50d8失敗', 'err');
+      setMsg(r.msg || '取\u5098失敗', 'err');
       shakeBoxes();
       buzz(BUZZ.err);
       return;
     }
     try { localStorage.removeItem('umbrellaCode'); } catch (e) { /* 忽略 */ }
     renderSavedCode('');
-    setMsg('第 ' + r.slot + ' 格開門中，請取走雨\u50d8');
+    setMsg('第 ' + r.slot + ' 格開門中，請取走雨\u5098');
     buzz(BUZZ.ok);
     await waitIdle();
     setMsg('✅ 完成，歡迎再用', 'ok');
@@ -416,7 +416,7 @@ function startStatusPoll() {
 }
 function stopStatusPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
 
-/* ---------- 複製取僘碼 ---------- */
+/* ---------- 複製取傘碼 ---------- */
 async function copyCode() {
   const code = $('rcCode').textContent;
   try {

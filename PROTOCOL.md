@@ -18,7 +18,7 @@
 |---|---|
 | `status` | 立即推送一次狀態 |
 | `store` | 找空格→產生 4 位碼→**立即回 result(ok,slot,code)**→進入忙碌週期（轉盤+開門） |
-| `take 1234` | 碼錯誤→立即回 result(ok:false,「取僘碼錯誤」)；正確→進入忙碌週期，**不回 result** |
+| `take 1234` | 碼錯誤→立即回 result(ok:false,「取傘碼錯誤」)；正確→進入忙碌週期，**不回 result** |
 | `open` / `close` | 立即回 result |
 | `clear` | 清空所有格位，回 result + 推送狀態 |
 | `home N` | 設定對正格（1-8），回 result + 推送狀態 |
@@ -32,7 +32,7 @@
 **關鍵細節：take 成功不發 result。** 韌體只推送 busy 狀態週期
 （busy=false → busy=true → …→ busy=false）。伺服器因此以「單一命令飛行中
 （commandInFlight）」配對無 id 的回覆，並在忙碌週期結束時推斷 take 成功，
-用提交時計算的 `expectedSlot`（取僘碼在 codes 中的位置）回給瀏覽器。
+用提交時計算的 `expectedSlot`（取傘碼在 codes 中的位置）回給瀏覽器。
 
 ## 3. 瀏覽器 ↔ 伺服器（JSON，帶 id）
 

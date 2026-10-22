@@ -35,7 +35,7 @@ ws.on('message', (raw) => {
     if (m.ok && m.code) {
       tCode = Date.now();
       code = m.code;
-      console.log('  ✅ 拿到取傂碼 ' + code + '（第' + m.slot + '格）→ 用戶拿到碼耗時: ' + ms(t0, tCode));
+      console.log('  ✅ 拿到取傘碼 ' + code + '（第' + m.slot + '格）→ 用戶拿到碼耗時: ' + ms(t0, tCode));
     } else if (seq === 2) {
       console.log('  take 回執: ' + m.msg + '（耗時 ' + ms(t0, Date.now()) + '）');
       setTimeout(() => process.exit(0), 1500);

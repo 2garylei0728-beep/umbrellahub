@@ -1,7 +1,7 @@
 {
-  "name": "智能旋轉式雨\u50d8寄存櫃",
-  "short_name": "雨\u50d8櫃",
-  "description": "手機開網頁即可存\u50d8、取\u50d8，無需連接設備熱點",
+  "name": "智能旋轉式雨\u5098寄存櫃",
+  "short_name": "雨\u5098櫃",
+  "description": "手機開網頁即可存\u5098、取\u5098，無需連接設備熱點",
   "lang": "zh-Hant",
   "start_url": "./",
   "scope": "./",

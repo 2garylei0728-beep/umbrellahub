@@ -1,5 +1,5 @@
 /*
- * 智能旋轉式雨僘寄存櫃 — 在線控制中繼伺服器 v2
+ * 智能旋轉式雨傘寄存櫃 — 在線控制中繼伺服器 v2
  * 瀏覽器 ── WebSocket/HTTPS ──► 本伺服器 ── WebSocket ──► ESP32
  *
  * ESP32 的既有協定是純文字命令（store、take 1234、open…），
@@ -344,7 +344,7 @@ wss.on('connection', (ws, req) => {
           if (active.command === 'store' && active.resultSent) {
             completeEntry(active);
           } else if (active.command.startsWith('take ') && !active.resultSent) {
-            /* 既有 v4.2 韌體的成功取僘流程只推送 busy 狀態，不推 result。 */
+            /* 既有 v4.2 韌體的成功取傘流程只推送 busy 狀態，不推 result。 */
             completeEntry(active, { ok: true, msg: '', slot: active.expectedSlot || lastStatus.cur });
           }
         }
@@ -366,7 +366,7 @@ wss.on('connection', (ws, req) => {
           code: message.code
         };
         if (entry.command === 'store' && message.ok) {
-          /* 存僘回覆先到，等待後續 busy=false 才允許下一個命令。 */
+          /* 存傘回覆先到，等待後續 busy=false 才允許下一個命令。 */
           sendCommandResult(entry, fields);
           entry.resultSent = true;
           if (entry.sawBusy && !lastStatus.busy) completeEntry(entry);
@@ -405,7 +405,7 @@ wss.on('connection', (ws, req) => {
     if (message.t === 'take') {
       const code = String(message.code || '').trim();
       if (!/^\d{4}$/.test(code)) {
-        safeSend(ws, { t: 'result', id, ok: false, msg: '請輸入 4 位取\u50d8碼' });
+        safeSend(ws, { t: 'result', id, ok: false, msg: '請輸入 4 位取\u5098碼' });
         return;
       }
       submitCommand(ws, { t: 'take', code, id });
@@ -460,7 +460,7 @@ process.on('unhandledRejection', (error) => log('[fatal] unhandledRejection（�
 
 server.listen(PORT, '0.0.0.0', () => {
   log('==============================================');
-  log(' 智能雨\u50d8寄存櫃 — 在線控制伺服器 v2 已啟動 :' + PORT);
+  log(' 智能雨\u5098寄存櫃 — 在線控制伺服器 v2 已啟動 :' + PORT);
   log(' 本機測試：http://localhost:' + PORT);
   log(' 設備密鑰：' + (process.env.DEVICE_SECRET ? '(已設定)' : '(預設值，請務必修改)'));
   log(' 寬限隊列：' + CMD_GRACE_MS + 'ms｜僵屍判定：' + DEVICE_TIMEOUT_MS + 'ms');

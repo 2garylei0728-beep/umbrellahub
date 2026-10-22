@@ -4,7 +4,7 @@
    韌體行為要點（與 server.js 的配對邏輯對應）：
    - store：先推 result(ok,slot,code)，接著 busy=true，約 6 秒後 busy=false（不補發 result）
    - take 成功：只推 busy 狀態週期，不推 result（由伺服器依 busy 結束推斷成功）
-   - take 失敗：立即推 result(ok:false, msg:'取傂碼錯誤')
+   - take 失敗：立即推 result(ok:false, msg:'取傘碼錯誤')
    - open/close/clear/home/go：立即推 result */
 'use strict';
 const WebSocket = require('ws');
@@ -16,7 +16,7 @@ const SLOTS = 8;
 let codes = new Array(SLOTS).fill('');
 let cur = 0;
 let busy = false;
-let jobType = 0;   // 1=存傂 2=取傂（模擬 runJob 非阻塞狀態機）
+let jobType = 0;   // 1=存傘 2=取傘（模擬 runJob 非阻塞狀態機）
 let nextCode = 1000;
 
 function send(obj) {
@@ -66,7 +66,7 @@ ws.on('message', (raw) => {
     if (k < 0) { pushResult(false, '櫃子已滿'); return; }
     const code = String(nextCode++);
     codes[k] = code;
-    pushResult(true, '', k + 1, code);   // 先給結果（帶取傂碼）
+    pushResult(true, '', k + 1, code);   // 先給結果（帶取傘碼）
     pushStatus();
     startJob(1);                          // 再進入忙碌週期
     return;
@@ -76,8 +76,8 @@ ws.on('message', (raw) => {
     const code = cmd.substring(5).trim();
     if (busy || jobType) { pushResult(false, '櫃子運作中，請稍後再試'); return; }
     const k = code ? codes.findIndex(c => c === code) : -1;
-    if (k < 0) { pushResult(false, '取傂碼錯誤'); return; }
-    codes[k] = '';                        // 取傂成功：清格（韌體在開門取走後清）
+    if (k < 0) { pushResult(false, '取傘碼錯誤'); return; }
+    codes[k] = '';                        // 取傘成功：清格（韌體在開門取走後清）
     pushStatus();
     startJob(2);                          // 只推忙碌週期，不補 result
     return;

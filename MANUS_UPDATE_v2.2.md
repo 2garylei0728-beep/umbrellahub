@@ -14,10 +14,10 @@ watchdog（90 秒無訊息終止）作為真正的死連線兜底。
 
 ### 2. 指令提速（固件，已另行燒錄，隨包同步）
 - 步進脈衝 1000us → 800us（轉盤快 20%，TMC2209 負載實測不失步）
-- 開門等待 5000ms → 3500ms（放傂 3.5 秒足夠）
+- 開門等待 5000ms → 3500ms（放傘 3.5 秒足夠）
 - WS 斷線重連 5s → 1.5s
 - status 推送 2s → 1.5s
-→ 單次存傂完整周期從約 10 秒降到約 7 秒
+→ 單次存傘完整周期從約 10 秒降到約 7 秒
 
 ### 3. 網頁體驗（隨包上線）
 - 離線寬限：online=false 持續 3 秒才判定離線（瞬時抖動不再嚇用戶、不誤禁用按鈕）
@@ -30,7 +30,7 @@ watchdog（90 秒無訊息終止）作為真正的死連線兜底。
 
 - server.js          heartbeat 修復＋watchdog 90s＋指令監控廣播（cmdlog）
 - public/app.js      離線寬限＋即時反饋＋指令監控渲染
-- public/index.html  指令監控面板＋傂字 HTML 實體化
+- public/index.html  指令監控面板＋傘字 HTML 實體化
 - public/sw.js       app.js 改網絡優先（消滅緩存舊碼）
 - public/manifest.webmanifest、public/icon.svg  字元硬化
 - esp32-firmware/umbrella_cabinet_online.ino  速度優化版固件（已燒錄，僅存檔同步）

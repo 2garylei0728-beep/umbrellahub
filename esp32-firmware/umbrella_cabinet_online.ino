@@ -1,4 +1,4 @@
-/* 智能旋轉式雨僘寄存櫃 — 在線控制版 v4.2
+/* 智能旋轉式雨傘寄存櫃 — 在線控制版 v4.2
    硬件：ESP32-E 38pin 擴展板、NEMA17 + TMC2209、WF8006 舵機 x2、操作指示燈 x1
    環境：Arduino IDE 2.x + esp32 開發板套件 3.x（實測 3.3.12 / IDF 5.5）
          + ESP32Servo 3.2.1 + WebSockets 2.7.2
@@ -50,7 +50,7 @@ const char* AP_PASS = "12345678";
 #define DOOR_OPEN_DEG 78
 #define DOOR_CLOSE_DEG 0
 #define SERVO_B_MIRROR true  // B 舵機反向安裝；方向相反時改 false
-#define DOOR_HOLD_MS 3500    // 開門後等待使用者放/取僘的時間（3500 實測足夠，縮短指令周期）
+#define DOOR_HOLD_MS 3500    // 開門後等待使用者放/取傘的時間（3500 實測足夠，縮短指令周期）
 
 IPAddress apIP(192, 168, 4, 1);
 WebServer server(80);
@@ -59,8 +59,8 @@ Preferences prefs;
 Servo servoA, servoB;
 WebSocketsClient webSocket;
 
-String slotCode[SLOTS];      // 各格取僘碼，"" = 空格
-int curSlot = 0;             // 目前對正取僘口的格位（0 起算）
+String slotCode[SLOTS];      // 各格取傘碼，"" = 空格
+int curSlot = 0;             // 目前對正取傘口的格位（0 起算）
 bool busy = false, started = false, noSvc = false, apMode = false;
 bool serverOnline = false, serverConfigured = false, inCmd = false;
 unsigned long lastTry = 0, lastStatusPush = 0, lastWsTry = 0;
@@ -69,14 +69,14 @@ int wifiFail = 0;                // 連續 WiFi 重連失敗計數（退避用�
 uint8_t staMac[6] = {0};         // 自訂 STA MAC（被 AP 拉黑時更換用；全 0 = 用原廠 MAC）
 unsigned long lastWifiTry = 0;   // 上次 WiFi 重連嘗試時間
 String cfgSsid, cfgPass;       // 從 Preferences 讀取的 WiFi 憑證（配網用，空發時回落到寫死預設）
-int jobType = 0, jobSlot = 0;  // 1 = 存僘, 2 = 取僘
+int jobType = 0, jobSlot = 0;  // 1 = 存傘, 2 = 取傘
 String lastStatusJson = "";
 
 /* ===== 手機網頁（本地備援用，存放在快閃記憶體）===== */
 const char PAGE[] PROGMEM = R"rawliteral(
 <!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>智能雨&#20438;寄存櫃 &#183; 本地控制</title><style>
+<title>智能雨傘寄存櫃 &#183; 本地控制</title><style>
 :root{--bg:#f4f6f8;--card:#fff;--txt:#1b2733;--mut:#5a6b7b;--pri:#1f6feb;--ok:#1d7a1d;--err:#b3261e;--line:#dde3ea}
 @media(prefers-color-scheme:dark){:root{--bg:#0f151c;--card:#1a232e;--txt:#e8eef4;--mut:#93a3b3;--pri:#4d8ef7;--ok:#6bd06b;--err:#ff9e94;--line:#2c3a48}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -104,19 +104,19 @@ input:focus{outline:2px solid var(--pri);outline-offset:-1px}
 .hint{font-size:12px;color:var(--mut);text-align:center;margin:16px 0 8px;line-height:1.7}
 </style></head><body><div class="wrap">
 <span class="badge">本地備援模式</span>
-<h1>&#9730;&#65039; 智能雨&#20438;寄存櫃</h1>
-<p class="sub">此頁面供現場調試使用；日常存&#20438;／取&#20438;請透過線上網站（掃描櫃身 QR Code）</p>
+<h1>&#9730;&#65039; 智能雨傘寄存櫃</h1>
+<p class="sub">此頁面供現場調試使用；日常存傘／取傘請透過線上網站（掃描櫃身 QR Code）</p>
 <div class="c"><div class="stat"><b id="free">&#8211;</b><span>個空位</span></div>
 <div class="rows">
-<div><span class="k">取&#20438;口對正</span>第 <span id="cur">&#8211;</span> 格</div>
+<div><span class="k">取傘口對正</span>第 <span id="cur">&#8211;</span> 格</div>
 <div><span class="k">中繼伺服器</span><span id="srv"><span class="dot off"></span>檢查中&#8230;</span></div>
 <div><span class="k">櫃子狀態</span><span id="busy">待機</span></div>
 </div></div>
-<div class="c"><b>存&#20438;</b><button id="bs" onclick="store()">我要存&#20438;</button></div>
-<div class="c"><b>取&#20438;</b><input id="cd" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off">
-<button id="bt" onclick="take()">我要取&#20438;</button><div id="m"></div></div>
+<div class="c"><b>存傘</b><button id="bs" onclick="store()">我要存傘</button></div>
+<div class="c"><b>取傘</b><input id="cd" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off">
+<button id="bt" onclick="take()">我要取傘</button><div id="m"></div></div>
 <a class="wifibtn" href="/wifi">&#9881;&#65039; WiFi 設定（更換網絡）</a>
-<p class="hint">取&#20438;碼只會顯示一次，請截圖或抄下<br>櫃子聯網後即可使用，無需連接設備熱點</p>
+<p class="hint">取傘碼只會顯示一次，請截圖或抄下<br>櫃子聯網後即可使用，無需連接設備熱點</p>
 </div>
 <script>
 const $=id=>document.getElementById(id);
@@ -137,29 +137,29 @@ async function store(){msg('請稍候\u2026');const r=await j('/api/store');
  if(!r.ok){msg(r.msg,'err');return}
  try{localStorage.setItem('umbrellaCode',r.code)}catch(e){}
  $('cd').value=r.code;
- msg('第 '+r.slot+' 格開門中，請放入雨&#20438;<br>你的取&#20438;碼<div class="big">'+r.code+'</div>請截圖或抄下');
+ msg('第 '+r.slot+' 格開門中，請放入雨傘<br>你的取傘碼<div class="big">'+r.code+'</div>請截圖或抄下');
  await wait();msg('&#9989; 完成，門已關閉','ok')}
-async function take(){const c=$('cd').value.trim();if(c.length!==4){msg('請輸入 4 位取&#20438;碼','err');return}
+async function take(){const c=$('cd').value.trim();if(c.length!==4){msg('請輸入 4 位取傘碼','err');return}
  msg('請稍候\u2026');
  const r=await j('/api/take?code='+encodeURIComponent(c));
  if(!r.ok){msg(r.msg,'err');return}
  try{localStorage.removeItem('umbrellaCode')}catch(e){}
- msg('第 '+r.slot+' 格開門中，請取走雨&#20438;');
+ msg('第 '+r.slot+' 格開門中，請取走雨傘');
  await wait();msg('&#9989; 完成，歡迎再用','ok');$('cd').value=''}
 refresh();setInterval(refresh,4000);
 </script></body></html>
 )rawliteral";
 
 /* ===== 操作指示燈（非阻塞閃爍，不影響馬達與網頁回應）===== */
-/* 信號設計（一顆燈區分存僘／取僘，持續到完成）：
-   存僘中  慢閃：亮 0.3s / 滅 0.3s（轉動馬達期間）
-   取僘中  快閃：亮 0.1s / 滅 0.1s
-   開門中  常亮（門已開，請放僘／請取僘）
+/* 信號設計（一顆燈區分存傘／取傘，持續到完成）：
+   存傘中  慢閃：亮 0.3s / 滅 0.3s（轉動馬達期間）
+   取傘中  快閃：亮 0.1s / 滅 0.1s
+   開門中  常亮（門已開，請放傘／請取傘）
    完成    三連快閃（每次約 0.2s）後熄滅，回到待機
    待機    全部正常：每 3 秒輕閃一下
            中繼離線：每 3 秒雙閃（WiFi 有連但網站控制不通）
            WiFi 離線：每 1 秒快閃警示                                  */
-int ledMode = 5;               // 0=滅 1=存僘中 2=取僘中 3=開門等待 4=完成(一次性) 5=待機
+int ledMode = 5;               // 0=滅 1=存傘中 2=取傘中 3=開門等待 4=完成(一次性) 5=待機
 int ledBlinks = 0;             // 一次性閃爍剩餘次數（0 = 無）
 int ledBlinkMs = 200;          // 一次性閃爍半週期
 unsigned long ledT0 = 0;       // 一次性閃爍起點
@@ -185,8 +185,8 @@ void ledTick() {
   }
   bool on = false;
   switch (ledMode) {
-    case 1: on = (now % 600) < 300; break;   // 存僘：慢閃
-    case 2: on = (now % 200) < 100; break;   // 取僘：快閃
+    case 1: on = (now % 600) < 300; break;   // 存傘：慢閃
+    case 2: on = (now % 200) < 100; break;   // 取傘：快閃
     case 3: on = true; break;                // 開門等待：常亮
     case 5:                                  // 待機：三態指示
       if (WiFi.status() != WL_CONNECTED) on = (now % 1000) < 100;                    // WiFi 離線：快閃
@@ -391,7 +391,7 @@ void handleServerCmd(const String& raw) {
       else {
         String code = newCode();
         slotCode[k] = code; jobType = 1; jobSlot = k;
-        ledSetMode(1);                       // 指示燈：存僘慢閃，直到完成
+        ledSetMode(1);                       // 指示燈：存傘慢閃，直到完成
         pushResult(true, "", k + 1, code);
         pushStatus(true);
       }
@@ -403,8 +403,8 @@ void handleServerCmd(const String& raw) {
     else {
       int k = -1;
       if (code != "") for (int i = 0; i < SLOTS; i++) if (slotCode[i] == code) { k = i; break; }
-      if (k < 0) pushResult(false, "取僘碼錯誤");
-      else { jobType = 2; jobSlot = k; ledSetMode(2); pushStatus(true); }   // 指示燈：取僘快閃
+      if (k < 0) pushResult(false, "取傘碼錯誤");
+      else { jobType = 2; jobSlot = k; ledSetMode(2); pushStatus(true); }   // 指示燈：取傘快閃
     }
   }
   else if (m == "open") {
@@ -519,14 +519,14 @@ void setDoor(bool open) {
   waitMs(700);
 }
 
-/* ===== 存/取僘流程（在 loop 中執行）===== */
+/* ===== 存/取傘流程（在 loop 中執行）===== */
 void runJob() {
   busy = true;
   int t = jobType, s = jobSlot; jobType = 0;
   pushStatus(true);
   rotateTo(s);
   setDoor(true);
-  ledSetMode(3);                 // 開門等待：常亮（請放僘／請取僘）
+  ledSetMode(3);                 // 開門等待：常亮（請放傘／請取傘）
   waitMs(DOOR_HOLD_MS);
   setDoor(false);
   if (t == 2) slotCode[s] = "";
@@ -553,7 +553,7 @@ void apiStore() {
   if (k < 0) { sendJson("{\"ok\":false,\"msg\":\"櫃子已滿\"}"); return; }
   String code = newCode();
   slotCode[k] = code; jobType = 1; jobSlot = k;
-  ledSetMode(1);                       // 指示燈：存僘慢閃（本地備援路徑）
+  ledSetMode(1);                       // 指示燈：存傘慢閃（本地備援路徑）
   sendJson(String("{\"ok\":true,\"slot\":") + (k + 1) + ",\"code\":\"" + code + "\"}");
 }
 void apiTake() {
@@ -561,9 +561,9 @@ void apiTake() {
   String code = server.arg("code"); code.trim();
   int k = -1;
   if (code != "") for (int i = 0; i < SLOTS; i++) if (slotCode[i] == code) { k = i; break; }
-  if (k < 0) { sendJson("{\"ok\":false,\"msg\":\"取僘碼錯誤\"}"); return; }
+  if (k < 0) { sendJson("{\"ok\":false,\"msg\":\"取傘碼錯誤\"}"); return; }
   jobType = 2; jobSlot = k;
-  ledSetMode(2);                       // 指示燈：取僘快閃（本地備援路徑）
+  ledSetMode(2);                       // 指示燈：取傘快閃（本地備援路徑）
   sendJson(String("{\"ok\":true,\"slot\":") + (k + 1) + "}");
 }
 
@@ -574,14 +574,14 @@ void handleAdmin() {
   int n = server.arg("n").toInt();
   noSvc = true;
   if (act != "" && (busy || jobType)) msg = "櫃子運作中";
-  else if (act == "home" && n >= 1 && n <= SLOTS) { curSlot = n - 1; saveCur(); msg = "已對位：第 " + String(n) + " 格在取僘口"; }
+  else if (act == "home" && n >= 1 && n <= SLOTS) { curSlot = n - 1; saveCur(); msg = "已對位：第 " + String(n) + " 格在取傘口"; }
   else if (act == "go" && n >= 1 && n <= SLOTS) { rotateTo(n - 1); msg = "已轉到第 " + String(n) + " 格"; }
   else if (act == "clear") { for (int i = 0; i < SLOTS; i++) { slotCode[i] = ""; saveSlot(i); } msg = "已清空全部格位"; }
   else if (act == "open") { setDoor(true); msg = "門已開"; }
   else if (act == "close") { setDoor(false); msg = "門已關"; }
   noSvc = false;
   String base = "/admin?key=" + String(ADMIN_KEY) + "&act=";
-  String h = "<meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><body style='font-family:sans-serif;padding:14px'><h2>管理頁（本地）</h2><p>" + msg + "</p><p>連線：" + ipStr() + "</p><p>取僘口對正：第 " + String(curSlot + 1) + " 格</p><table border=1 cellpadding=6>";
+  String h = "<meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><body style='font-family:sans-serif;padding:14px'><h2>管理頁（本地）</h2><p>" + msg + "</p><p>連線：" + ipStr() + "</p><p>取傘口對正：第 " + String(curSlot + 1) + " 格</p><table border=1 cellpadding=6>";
   for (int i = 0; i < SLOTS; i++) { String cell = slotCode[i] == "" ? String("空") : slotCode[i]; h += "<tr><td>第 " + String(i + 1) + " 格</td><td>" + cell + "</td></tr>"; }
   h += "</table><p><a href='" + base + "open'>開門</a> | <a href='" + base + "close'>關門</a> | <a href='" + base + "clear'>清空全部</a></p><p>對位：";
   for (int i = 1; i <= SLOTS; i++) h += "<a href='" + base + "home&n=" + String(i) + "'>" + String(i) + "</a> ";
@@ -779,8 +779,8 @@ void handleWifiReset() {
 const char* ledName() {
   if (ledBlinks > 0) return "完成閃爍";
   switch (ledMode) {
-    case 1: return "存僘慢閃";
-    case 2: return "取僘快閃";
+    case 1: return "存傘慢閃";
+    case 2: return "取傘快閃";
     case 3: return "開門常亮";
     case 5: return "待機";
     default: return "熄滅";
@@ -791,7 +791,7 @@ void handleSerial() {
   String c = Serial.readStringUntil('\n'); c.trim();
   if (c == "status") {
     Serial.println("連線：" + ipStr() + (serverOnline ? " ＋ 中繼伺服器在線" : "（中繼離線）"));
-    Serial.printf("取僘口對正：第 %d 格，空格 %d/%d\n", curSlot + 1, freeCount(), SLOTS);
+    Serial.printf("取傘口對正：第 %d 格，空格 %d/%d\n", curSlot + 1, freeCount(), SLOTS);
     Serial.printf("指示燈：%s\n", ledName());
     for (int i = 0; i < SLOTS; i++) Serial.printf("  第 %d 格：%s\n", i + 1, slotCode[i] == "" ? "(空)" : slotCode[i].c_str());
   }
@@ -824,8 +824,8 @@ void handleSerial() {
     Serial.printf("連續失敗: WiFi %d 次 / WS %d 次\n", wifiFail, wsFailStreak);
   }
   else if (c == "led test") {           // 指示燈測試：依序示範全部信號（約 7 秒）
-    Serial.println("指示燈測試 → 存僘慢閃");   ledSetMode(1); waitMs(2000);
-    Serial.println("指示燈測試 → 取僘快閃");   ledSetMode(2); waitMs(2000);
+    Serial.println("指示燈測試 → 存傘慢閃");   ledSetMode(1); waitMs(2000);
+    Serial.println("指示燈測試 → 取傘快閃");   ledSetMode(2); waitMs(2000);
     Serial.println("指示燈測試 → 開門常亮");   ledSetMode(3); waitMs(2000);
     Serial.println("指示燈測試 → 完成三連閃"); ledSetMode(5); ledFlash(3, 200); waitMs(1200);
     Serial.println("指示燈測試完成，回到待機");
@@ -848,7 +848,7 @@ void handleSerial() {
 
 void setup() {
   Serial.begin(115200); delay(300);
-  Serial.println("\n===== 智能旋轉式雨僘寄存櫃 啟動（在線控制版 v4.2）=====");
+  Serial.println("\n===== 智能旋轉式雨傘寄存櫃 啟動（在線控制版 v4.2）=====");
   WiFi.onEvent(onWiFiEvent);                 // WiFi 事件日誌（連線診斷）
   pinMode(STEP_PIN, OUTPUT); pinMode(DIR_PIN, OUTPUT); pinMode(EN_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT); digitalWrite(LED_PIN, LOW);   // 指示燈預設熄滅
@@ -911,7 +911,7 @@ void setup() {
   } else {
     Serial.println("尚未設定中繼伺服器網址（SERVER_URL），在線控制未啟用；本地備援正常");
   }
-  Serial.printf("操作指示燈：GPIO%d（存僘慢閃／取僘快閃／開門常亮／完成三連閃；序列埠 led test 可測試）\n", LED_PIN);
+  Serial.printf("操作指示燈：GPIO%d（存傘慢閃／取傘快閃／開門常亮／完成三連閃；序列埠 led test 可測試）\n", LED_PIN);
   Serial.println("注意：本版無歸零感測器，轉盤被手動轉動後請用 home <格號> 重新對位");
 }
 

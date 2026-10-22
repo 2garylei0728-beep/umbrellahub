@@ -15,7 +15,7 @@ ws.on('open', () => {
   const mid = ++id;
   const timer = setTimeout(() => { console.log('❌ 超時：指令未被補送'); process.exit(1); }, 20000);
   pending.set(mid, { resolve: (m) => { clearTimeout(timer); console.log('✅ 指令結果:', JSON.stringify(m)); process.exit(0); } });
-  console.log('[grace-test] 送出「存僘」指令（設備離線中）…');
+  console.log('[grace-test] 送出「存傘」指令（設備離線中）…');
   ws.send(JSON.stringify({ t: 'store', id: mid }));
   console.log('[grace-test] 已送出——請在 5 秒內重新啟動 mock_esp32');
 });
