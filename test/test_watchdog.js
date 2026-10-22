@@ -15,7 +15,7 @@ const user = new WebSocket(URL + '?role=user');
 let gotExpire = false;
 
 user.on('open', () => {
-  console.log('[A] 用戶已連線（設備離線中），送出存傘指令…');
+  console.log('[A] 用戶已連線（設備離線中），送出存僘指令…');
   user.send(JSON.stringify({ t: 'store', id: 1 }));
   setTimeout(() => {
     ok(gotExpire, '寬限期到期後收到「暫時離線」報錯');

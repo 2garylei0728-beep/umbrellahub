@@ -1,5 +1,5 @@
 /*
- * 智能旋轉式雨傘寄存櫃 — 在線控制中繼伺服器 v2
+ * 智能旋轉式雨僘寄存櫃 — 在線控制中繼伺服器 v2
  * 瀏覽器 ── WebSocket/HTTPS ──► 本伺服器 ── WebSocket ──► ESP32
  *
  * ESP32 的既有協定是純文字命令（store、take 1234、open…），
@@ -17,7 +17,7 @@ const { WebSocketServer } = require('ws');
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const DEVICE_SECRET = process.env.DEVICE_SECRET || 'change-me-device-secret';
 const ADMIN_KEY = process.env.ADMIN_KEY || '8888';
-const DEVICE_TIMEOUT_MS = parseInt(process.env.DEVICE_TIMEOUT_MS || '60000', 10);
+const DEVICE_TIMEOUT_MS = parseInt(process.env.DEVICE_TIMEOUT_MS || '90000', 10);  // 僵屍判定 90s（邊緣網絡更寬容，防誤殺；ESP32 每 1.5s 推 status 正常遠低於此）
 const CMD_GRACE_MS = parseInt(process.env.CMD_GRACE_MS || '8000', 10);
 const MAX_QUEUE = 30;
 const MAX_INFLIGHT_PER_USER = 5;
@@ -112,6 +112,8 @@ function setDeviceOnline(online) {
 
 function sendCommandResult(entry, fields) {
   safeSend(entry.ws, { t: 'result', id: entry.clientId, ...fields });
+  /* 監控廣播：讓網頁「即時指令監控」面板能看到設備回執（普通用戶忽略此訊息） */
+  broadcast({ t: 'cmdlog', dir: 'rx', ok: fields && fields.ok, msg: (fields && fields.msg) || '', slot: fields && fields.slot, code: fields && fields.code });
 }
 
 function removeFromQueue(entry) {
@@ -192,6 +194,8 @@ function pumpQueue() {
       commandQueue.unshift(entry);
       return;
     }
+    /* 監控廣播：ESP32 實際收到的純文字命令 */
+    broadcast({ t: 'cmdlog', dir: 'tx', cmd: entry.command });
     scheduleEntryExpiry(entry, RESULT_WAIT_MS, '櫃子沒有回應，請重新整理再試');
     return;
   }
@@ -289,7 +293,8 @@ wss.on('connection', (ws, req) => {
   } catch (_) { /* 使用 user 預設 */ }
 
   ws.isAlive = true;
-  ws.on('pong', () => { ws.isAlive = true; });
+  ws.lastSeen = Date.now();
+  ws.on('pong', () => { ws.isAlive = true; ws.lastSeen = Date.now(); });
   ws.on('error', (error) => log('[ws] 連線錯誤：', error.message));
   if (ws._socket) ws._socket.setNoDelay(true);
 
@@ -318,6 +323,7 @@ wss.on('connection', (ws, req) => {
 
     ws.on('message', (raw) => {
       deviceLastSeen = Date.now();
+      ws.lastSeen = Date.now();   // heartbeat 保活計時
       let message;
       try { message = JSON.parse(raw.toString()); } catch (_) { return; }
 
@@ -338,7 +344,7 @@ wss.on('connection', (ws, req) => {
           if (active.command === 'store' && active.resultSent) {
             completeEntry(active);
           } else if (active.command.startsWith('take ') && !active.resultSent) {
-            /* 既有 v4.2 韌體的成功取傘流程只推送 busy 狀態，不推 result。 */
+            /* 既有 v4.2 韌體的成功取僘流程只推送 busy 狀態，不推 result。 */
             completeEntry(active, { ok: true, msg: '', slot: active.expectedSlot || lastStatus.cur });
           }
         }
@@ -360,7 +366,7 @@ wss.on('connection', (ws, req) => {
           code: message.code
         };
         if (entry.command === 'store' && message.ok) {
-          /* 存傘回覆先到，等待後續 busy=false 才允許下一個命令。 */
+          /* 存僘回覆先到，等待後續 busy=false 才允許下一個命令。 */
           sendCommandResult(entry, fields);
           entry.resultSent = true;
           if (entry.sawBusy && !lastStatus.busy) completeEntry(entry);
@@ -386,6 +392,7 @@ wss.on('connection', (ws, req) => {
   safeSend(ws, { t: 'status', ...lastStatus, online: !!device });
 
   ws.on('message', (raw) => {
+    ws.lastSeen = Date.now();   // heartbeat 保活計時
     let message;
     try { message = JSON.parse(raw.toString()); } catch (_) { return; }
     const id = message.id;
@@ -398,7 +405,7 @@ wss.on('connection', (ws, req) => {
     if (message.t === 'take') {
       const code = String(message.code || '').trim();
       if (!/^\d{4}$/.test(code)) {
-        safeSend(ws, { t: 'result', id, ok: false, msg: '請輸入 4 位取傘碼' });
+        safeSend(ws, { t: 'result', id, ok: false, msg: '請輸入 4 位取\u50d8碼' });
         return;
       }
       submitCommand(ws, { t: 'take', code, id });
@@ -427,14 +434,17 @@ wss.on('connection', (ws, req) => {
 
 /* ---------- 連線與設備看守 ---------- */
 const heartbeat = setInterval(() => {
+  const now = Date.now();
   for (const ws of wss.clients) {
-    if (ws.isAlive === false) {
-      log('[ws] 心跳無回應，終止連線');
+    /* 以「最後訊息時間」判定（與 watchdog 同源）：ESP32 每 1.5s 推 status 即保活；
+       不再因 ping 無 pong 回應終止——arduinoWebSockets 等嵌入式客戶端不一定回 pong，
+       舊邏輯會每 60 秒誤殺一次，造成網站「時連時斷」（2026-10-22 實測根因） */
+    if (now - (ws.lastSeen || 0) > DEVICE_TIMEOUT_MS) {
+      log('[ws] 心跳無回應（超過 ' + DEVICE_TIMEOUT_MS + 'ms 無訊息），終止連線');
       try { ws.terminate(); } catch (_) { /* 忽略 */ }
       continue;
     }
-    ws.isAlive = false;
-    try { ws.ping(); } catch (_) { /* 忽略 */ }
+    try { ws.ping(); } catch (_) { /* 忽略 */ }   // 仍然 ping（保持中間設備活躍），但不因無 pong 終止
   }
 }, 30000);
 
@@ -450,7 +460,7 @@ process.on('unhandledRejection', (error) => log('[fatal] unhandledRejection（�
 
 server.listen(PORT, '0.0.0.0', () => {
   log('==============================================');
-  log(' 智能雨傘寄存櫃 — 在線控制伺服器 v2 已啟動 :' + PORT);
+  log(' 智能雨\u50d8寄存櫃 — 在線控制伺服器 v2 已啟動 :' + PORT);
   log(' 本機測試：http://localhost:' + PORT);
   log(' 設備密鑰：' + (process.env.DEVICE_SECRET ? '(已設定)' : '(預設值，請務必修改)'));
   log(' 寬限隊列：' + CMD_GRACE_MS + 'ms｜僵屍判定：' + DEVICE_TIMEOUT_MS + 'ms');

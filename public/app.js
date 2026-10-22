@@ -1,4 +1,4 @@
-/* 智能旋轉式雨傘寄存櫃 — 網站前端邏輯 v2.0（行業交付標準）
+/* 智能旋轉式雨僘寄存櫃 — 網站前端邏輯 v2.0（行業交付標準）
    與中繼伺服器走 WebSocket（/ws?role=user），斷線時：
    ① 指數退避自動重連；② 離線期間的指令進入緩衝，恢復後自動補發；
    ③ 退化為 /api/status 輪詢（唯讀）顯示狀態。
@@ -15,10 +15,26 @@ let reconnectTimer = null;
 let msgId = 0;
 let lastStatus = { online: false, free: 8, total: 8, busy: false, cur: 1, codes: [] };
 let lastStatusJson = '';
+/* 離線寬限：online=false 持續 3 秒才判定離線（瞬時抖動不嚇用戶、不誤禁用按鈕）；
+   恢復在線立即生效 */
+let effectiveOnline = false;
+let onlineGraceTimer = null;
+function applyOnline(on) {
+  if (on) {
+    if (onlineGraceTimer) { clearTimeout(onlineGraceTimer); onlineGraceTimer = null; }
+    if (!effectiveOnline) { effectiveOnline = true; refreshConn(); }
+  } else if (effectiveOnline && !onlineGraceTimer) {
+    onlineGraceTimer = setTimeout(() => {
+      onlineGraceTimer = null;
+      effectiveOnline = false;
+      refreshConn();
+    }, 3000);
+  }
+}
 const pending = new Map();   // id → { resolve, reject, timer }
 const buffer = [];           // 離線緩衝的指令（恢復後補發）
 let idleResolvers = [];
-let takeCode = '';           // 取傘碼輸入
+let takeCode = '';           // 取僘碼輸入
 
 /* ---------- Toast ---------- */
 function toast(msg, type, ms) {
@@ -103,7 +119,6 @@ function send(obj) {
     obj.id = id;
     const entry = {
       resolve, reject,
-      sent: false,
       timer: setTimeout(() => {
         pending.delete(id);
         removeFromBuffer(id);
@@ -111,15 +126,8 @@ function send(obj) {
       }, 25000)
     };
     pending.set(id, entry);
-    if (wsOpen && ws && ws.readyState === 1) {
-      try {
-        entry.sent = true;
-        ws.send(JSON.stringify(obj));
-      } catch (e) {
-        entry.sent = false;
-        buffer.push({ id, obj });
-        toast('連線中斷，指令將在恢復後自動送出', 'err');
-      }
+    if (wsOpen) {
+      ws.send(JSON.stringify(obj));
     } else {
       buffer.push({ id, obj });
       if (buffer.length > 10) {
@@ -137,21 +145,7 @@ function flushBuffer() {
   const n = buffer.length;
   while (buffer.length) {
     const item = buffer.shift();
-    const p = pending.get(item.id);
-    if (!p) continue;
-    if (wsOpen && ws && ws.readyState === 1) {
-      try {
-        p.sent = true;
-        ws.send(JSON.stringify(item.obj));
-      } catch (e) {
-        p.sent = false;
-        buffer.unshift(item);
-        break;
-      }
-    } else {
-      buffer.unshift(item);
-      break;
-    }
+    if (wsOpen && ws.readyState === 1) ws.send(JSON.stringify(item.obj));
   }
   toast('已恢復連線，補送 ' + n + ' 條指令', 'ok');
 }
@@ -163,12 +157,12 @@ function removeFromBuffer(id) {
 }
 
 function failAllPending(msg) {
-  for (const [id, p] of pending) {
-    if (!p.sent) continue; // 尚未送出的指令保留在 buffer，重連後補送
+  for (const [, p] of pending) {
     clearTimeout(p.timer);
     try { p.reject(new Error(msg || '離線')); } catch (e) { /* 忽略 */ }
-    pending.delete(id);
   }
+  pending.clear();
+  buffer.length = 0;
 }
 
 /* ---------- 訊息處理 ---------- */
@@ -182,16 +176,19 @@ function handle(m) {
       free: m.free, total: m.total || 8,
       busy: !!m.busy, cur: m.cur || 1, codes: m.codes || []
     };
+    applyOnline(lastStatus.online);
     renderStatus();
     if (!lastStatus.busy) flushIdle();
   } else if (m.t === 'presence') {
     if (lastStatus.online !== !!m.online) {
       lastStatus.online = !!m.online;
       lastStatusJson = '';
+      applyOnline(lastStatus.online);
       renderStatus();
-      refreshConn();
       if (m.online) toast('櫃子已上線', 'ok');
     }
+  } else if (m.t === 'cmdlog') {
+    appendCmdLog(m);
   } else if (m.t === 'result') {
     const p = pending.get(m.id);
     if (p) {
@@ -202,20 +199,52 @@ function handle(m) {
   }
 }
 
+/* ---------- 即時指令監控 ---------- */
+let cmdLogCount = 0;
+function appendCmdLog(m) {
+  const box = $('cmdLog');
+  if (!box) return;
+  const empty = box.querySelector('.empty');
+  if (empty) empty.remove();
+  const now = new Date();
+  const ts = String(now.getHours()).padStart(2, '0') + ':' +
+             String(now.getMinutes()).padStart(2, '0') + ':' +
+             String(now.getSeconds()).padStart(2, '0');
+  const line = document.createElement('div');
+  line.className = 'l';
+  if (m.dir === 'tx') {
+    line.innerHTML = '<span class="t">' + ts + '</span><span class="tx">🔀 ESP32 收到：' + escapeHtml(String(m.cmd || '')) + '</span>';
+  } else {
+    const okCls = m.ok ? 'ok' : 'err';
+    const icon = m.ok ? '🟢' : '🔴';
+    let txt = icon + ' ESP32 回執：' + escapeHtml(String(m.msg || ''));
+    if (m.ok && m.slot) txt += '（第 ' + m.slot + ' 格）';
+    if (m.ok && m.code) txt += ' 碼：' + escapeHtml(String(m.code));
+    line.innerHTML = '<span class="t">' + ts + '</span><span class="rx ' + okCls + '">' + txt + '</span>';
+  }
+  box.appendChild(line);
+  cmdLogCount++;
+  while (box.children.length > 60) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 /* ---------- 渲染 ---------- */
 function renderStatus() {
-  $('free').textContent = lastStatus.online ? lastStatus.free : '–';
-  $('slotInfo').textContent = '取傘口對正：第 ' + lastStatus.cur + ' 格';
+  $('free').textContent = (effectiveOnline && lastStatus.online) ? lastStatus.free : '–';
+  $('slotInfo').textContent = '取\u50d8口對正：第 ' + lastStatus.cur + ' 格';
   $('busy').classList.toggle('hidden', !lastStatus.busy);
-  $('offlineWarn').classList.toggle('hidden', !(wsOpen && !lastStatus.online));
-  $('bs').disabled = !lastStatus.online || lastStatus.busy;
+  $('offlineWarn').classList.toggle('hidden', !(wsOpen && !(effectiveOnline && lastStatus.online)));
+  $('bs').disabled = !(effectiveOnline && lastStatus.online) || lastStatus.busy;
   renderSlotTable();
   refreshConn();
 }
 
 function renderSlotTable() {
   const t = $('slotTable');
-  let html = '<tr><th>格位</th><th>取傘碼</th></tr>';
+  let html = '<tr><th>格位</th><th>取\u50d8碼</th></tr>';
   const codes = lastStatus.codes || [];
   for (let i = 0; i < (lastStatus.total || 8); i++) {
     const c = codes[i];
@@ -225,7 +254,7 @@ function renderSlotTable() {
   t.innerHTML = html;
 }
 
-/* ---------- 取傘碼鍵盤 ---------- */
+/* ---------- 取僘碼鍵盤 ---------- */
 function renderBoxes() {
   const boxes = $('codeBoxes').children;
   for (let i = 0; i < 4; i++) {
@@ -284,7 +313,7 @@ async function store() {
   buzz(BUZZ.tap);
   try {
     const r = await send({ t: 'store' });
-    if (!r.ok) { setMsg(r.msg || '存傘失敗', 'err'); buzz(BUZZ.err); return; }
+    if (!r.ok) { setMsg(r.msg || '存\u50d8失敗', 'err'); buzz(BUZZ.err); return; }
     try { localStorage.setItem('umbrellaCode', r.code); } catch (e) { /* 忽略 */ }
     renderSavedCode(r.code);
     $('rcSlot').textContent = '已存入第 ' + r.slot + ' 格';
@@ -305,7 +334,7 @@ async function submitTake() {
   if (takeCode.length !== 4) {
     shakeBoxes();
     buzz(BUZZ.err);
-    toast('請輸入 4 位取傘碼', 'err');
+    toast('請輸入 4 位取\u50d8碼', 'err');
     return;
   }
   hideResultCard();
@@ -314,14 +343,14 @@ async function submitTake() {
   try {
     const r = await send({ t: 'take', code: takeCode });
     if (!r.ok) {
-      setMsg(r.msg || '取傘失敗', 'err');
+      setMsg(r.msg || '取\u50d8失敗', 'err');
       shakeBoxes();
       buzz(BUZZ.err);
       return;
     }
     try { localStorage.removeItem('umbrellaCode'); } catch (e) { /* 忽略 */ }
     renderSavedCode('');
-    setMsg('第 ' + r.slot + ' 格開門中，請取走雨傘');
+    setMsg('第 ' + r.slot + ' 格開門中，請取走雨\u50d8');
     buzz(BUZZ.ok);
     await waitIdle();
     setMsg('✅ 完成，歡迎再用', 'ok');
@@ -387,7 +416,7 @@ function startStatusPoll() {
 }
 function stopStatusPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
 
-/* ---------- 複製取傘碼 ---------- */
+/* ---------- 複製取僘碼 ---------- */
 async function copyCode() {
   const code = $('rcCode').textContent;
   try {
@@ -439,6 +468,10 @@ window.addEventListener('DOMContentLoaded', () => {
   $('rcShare').addEventListener('click', shareCode);
   $('useSavedCode').addEventListener('click', useSavedCode);
   $('rcDone').addEventListener('click', () => { hideResultCard(); setMsg(''); });
+  $('cmdClear').addEventListener('click', () => {
+    const box = $('cmdLog');
+    box.innerHTML = '<div class="empty">已清空，等待指令…</div>';
+  });
 
   $('aopen').addEventListener('click', async () => { const r = await admin('open'); setMsg(r.ok ? '門已開' : (r.msg || '失敗'), r.ok ? 'ok' : 'err'); });
   $('aclose').addEventListener('click', async () => { const r = await admin('close'); setMsg(r.ok ? '門已關' : (r.msg || '失敗'), r.ok ? 'ok' : 'err'); });
@@ -488,7 +521,7 @@ window.addEventListener('DOMContentLoaded', () => {
   connect();
 
   /* Service Worker（PWA 離線殼，失敗不影響功能） */
-  if ('serviceWorker' in navigator) {
+  if (navigator.serviceWorker) {
     navigator.serviceWorker.register('sw.js').catch(() => { /* 忽略 */ });
   }
 });

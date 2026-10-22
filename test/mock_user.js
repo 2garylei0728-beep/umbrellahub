@@ -28,14 +28,14 @@ ws.on('open', async () => {
     await new Promise(r => setTimeout(r, 500));
     console.log('1️⃣  初始狀態: 空格', lastStatus.free, '/', lastStatus.total);
 
-    // 2. 存傘
-    console.log('2️⃣  送出「存傘」指令…');
+    // 2. 存僘
+    console.log('2️⃣  送出「存僘」指令…');
     const r1 = await send({ t: 'store' });
     console.log('   結果:', JSON.stringify(r1));
     savedCode = r1.code;
 
-    // 3. 錯誤取傘碼
-    console.log('3️⃣  用錯誤取傘碼取傘（預期失敗）…');
+    // 3. 錯誤取僘碼
+    console.log('3️⃣  用錯誤取僘碼取僘（預期失敗）…');
     const r2 = await send({ t: 'take', code: '9999' });
     console.log('   結果:', JSON.stringify(r2));
 
@@ -59,8 +59,8 @@ ws.on('open', async () => {
     const r6 = await send({ t: 'admin', key: ADMIN_KEY, act: 'go', n: 5 });
     console.log('   結果:', JSON.stringify(r6));
 
-    // 8. 用正確取傘碼取傘
-    console.log('8️⃣  用正確取傘碼 ' + savedCode + ' 取傘…');
+    // 8. 用正確取僘碼取僘
+    console.log('8️⃣  用正確取僘碼 ' + savedCode + ' 取僘…');
     const r7 = await send({ t: 'take', code: String(savedCode) });
     console.log('   結果:', JSON.stringify(r7));
 

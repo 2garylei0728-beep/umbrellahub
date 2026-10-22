@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f151c" media="(prefers-color-scheme: dark)">
-<meta name="description" content="智能旋轉式雨傘寄存櫃在線控制：手機開網頁即可存傘、取傘">
+<meta name="description" content="智能旋轉式雨&#x50D8;寄存櫃在線控制：手機開網頁即可存&#x50D8;、取&#x50D8;">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<title>智能雨傘寄存櫃</title>
+<title>智能雨&#x50D8;寄存櫃</title>
 <style>
   :root{
     --bg:#f4f6f8; --card:#ffffff; --text:#1b2733; --muted:#5a6b7b; --line:#dde3ea;
@@ -78,7 +78,7 @@
   .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .row>button{flex:1;width:auto}
 
-  /* 取傘碼顯示框 */
+  /* 取&#x50D8;碼顯示框 */
   .code-boxes{display:flex;gap:10px;justify-content:center;margin:6px 0 14px}
   .code-boxes .box{width:60px;height:72px;border:2px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--bg);transition:border-color .15s}
   .code-boxes .box.filled{border-color:var(--primary)}
@@ -95,6 +95,16 @@
   .msg.ok{color:var(--ok)}
   .msg.err{color:var(--err)}
   .big{font-size:42px;letter-spacing:10px;font-weight:800;text-align:center;margin:10px 0 4px;color:var(--primary);font-variant-numeric:tabular-nums}
+
+  /* 指令監控 */
+  .cmdlog{height:170px;overflow-y:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;line-height:1.7}
+  .cmdlog .l{display:flex;gap:8px;white-space:nowrap}
+  .cmdlog .t{color:var(--muted);flex-shrink:0;font-variant-numeric:tabular-nums}
+  .cmdlog .tx{color:var(--primary);overflow:hidden;text-overflow:ellipsis}
+  .cmdlog .rx{overflow:hidden;text-overflow:ellipsis}
+  .cmdlog .rx.ok{color:var(--ok)}
+  .cmdlog .rx.err{color:var(--err)}
+  .cmdlog .empty{color:var(--muted);text-align:center;padding-top:60px}
 
   /* 結果卡 */
   .result-card{border:1px solid var(--primary)}
@@ -133,7 +143,7 @@
     <a href="#statusCard">櫃況</a><a href="#storeCard">存傘</a><a href="#takeCard">取傘</a><a href="#adminCard">管理</a>
   </nav>
   <header>
-    <h1>☂️ 智能雨傘寄存櫃</h1>
+    <h1>☂️ 智能雨&#x50D8;寄存櫃</h1>
     <span id="conn" class="pill wait" role="status">連接中…</span>
   </header>
 
@@ -142,25 +152,25 @@
       <div class="stat-num"><b id="free">–</b><span>個空位</span></div>
       <div class="stat-side">
         <div id="busy" class="busy hidden">⚙️ 櫃子運作中…</div>
-        <div id="slotInfo">取傘口對正：第 – 格</div>
+        <div id="slotInfo">取&#x50D8;口對正：第 – 格</div>
       </div>
     </div>
     <div id="offlineWarn" class="warn hidden">⚠️ 櫃子暫時離線，恢復後會自動重連</div>
   </section>
 
   <section class="c" id="storeCard">
-    <h2>存傘</h2>
-    <button id="bs">我要存傘</button>
-    <p class="hint">系統會自動找空格、轉盤到位、開門，並給你一組 4 位取傘碼</p>
+    <h2>存&#x50D8;</h2>
+    <button id="bs">我要存&#x50D8;</button>
+    <p class="hint">系統會自動找空格、轉盤到位、開門，並給你一組 4 位取&#x50D8;碼</p>
   </section>
 
   <section class="c" id="takeCard">
-    <h2>取傘</h2>
+    <h2>取&#x50D8;</h2>
     <div id="savedCode" class="saved-code hidden" role="status">
       <span>本機保留的取傘碼：<strong id="savedCodeValue"></strong></span>
       <button class="ghost" id="useSavedCode">一鍵填入</button>
     </div>
-    <div id="codeBoxes" class="code-boxes" role="group" aria-label="4 位取傘碼">
+    <div id="codeBoxes" class="code-boxes" role="group" aria-label="4 位取&#x50D8;碼">
       <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
     </div>
     <div id="keypad" class="keypad">
@@ -175,17 +185,24 @@
       <button class="key" data-k="9">9</button>
       <button class="key fn" data-k="del">刪除</button>
       <button class="key" data-k="0">0</button>
-      <button class="key ok" data-k="ok">取傘</button>
+      <button class="key ok" data-k="ok">取&#x50D8;</button>
     </div>
     <div id="m" class="msg" role="status" aria-live="polite"></div>
+  </section>
+
+  <section class="c">
+    <h2>📡 即時指令監控</h2>
+    <div class="hint">這裡顯示網站指令轉送給 ESP32 的實際文字命令與設備回執——有「🔀 ESP32」和「🟢/🔴 回執」交替出現，就代表櫃子正常運作</div>
+    <div id="cmdLog" class="cmdlog" aria-live="polite"><div class="empty">等待指令…（在手機上按存傂／取傂，這裡會即時顯示）</div></div>
+    <div class="row"><button class="ghost" id="cmdClear">清空記錄</button></div>
   </section>
 
   <section class="c result-card hidden" id="resultCard">
     <div class="slot-line" id="rcSlot"></div>
     <div class="big" id="rcCode"></div>
-    <div class="hint" style="text-align:center">請截圖或抄下這組取傘碼（只會顯示一次）</div>
+    <div class="hint" style="text-align:center">請截圖或抄下這組取&#x50D8;碼（只會顯示一次）</div>
     <div class="copy-row">
-      <button class="ghost" id="rcCopy">📋 複製取傘碼</button>
+      <button class="ghost" id="rcCopy">📋 複製取&#x50D8;碼</button>
       <button class="ghost" id="rcShare">分享取傘碼</button>
       <button class="ghost" id="rcDone">知道了</button>
     </div>
@@ -201,19 +218,19 @@
           <button class="ghost" id="aclose">關門</button>
           <button class="ghost" id="aclear">清空全部</button>
         </div>
-        <div class="hint">對位（取傘口現在對正第幾格）：</div>
+        <div class="hint">對位（取&#x50D8;口現在對正第幾格）：</div>
         <div class="grid" id="homeGrid"></div>
         <div class="hint">轉到指定格：</div>
         <div class="grid" id="goGrid"></div>
         <table id="slotTable">
-          <tr><th>格位</th><th>取傘碼</th></tr>
+          <tr><th>格位</th><th>取&#x50D8;碼</th></tr>
         </table>
       </div>
     </details>
   </section>
 
   <footer>
-    取傘碼只會顯示一次，請截圖或抄下<br>
+    取&#x50D8;碼只會顯示一次，請截圖或抄下<br>
     櫃子聯網後即可使用，無需連接設備熱點
   </footer>
 </div>

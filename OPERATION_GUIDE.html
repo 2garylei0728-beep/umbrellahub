@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>智能雨傂寄存櫃 · 運作說明書（圖文版）</title>
+<style>
+:root{--bg:#f6f8fa;--card:#fff;--txt:#1b2733;--mut:#5a6b7b;--pri:#1f6feb;--pri2:#0d4fb8;--ok:#1d7a1d;--warn:#b26a00;--err:#b3261e;--line:#dde3ea;--code:#eef2f6}
+@media(prefers-color-scheme:dark){:root{--bg:#0f151c;--card:#1a232e;--txt:#e8eef4;--mut:#93a3b3;--pri:#5b9bff;--pri2:#8ab8ff;--ok:#6bd06b;--warn:#ffb84d;--err:#ff9e94;--line:#2c3a48;--code:#131c26}}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Ping Fang TC","Noto Sans TC","Microsoft YaHei",sans-serif;margin:0;background:var(--bg);color:var(--txt);line-height:1.75}
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 60px}
+header.hero{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-radius:16px;padding:30px 28px;margin-bottom:22px}
+header.hero h1{margin:0 0 6px;font-size:26px}
+header.hero p{margin:0;opacity:.92;font-size:14px}
+h2{font-size:20px;margin:34px 0 12px;padding-left:12px;border-left:4px solid var(--pri)}
+h3{font-size:16px;margin:22px 0 8px}
+p{margin:8px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:12px 0;box-shadow:0 1px 3px #0001}
+figure{margin:16px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+figure svg{max-width:100%;height:auto}
+figcaption{font-size:13px;color:var(--mut);margin-top:8px}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--code);font-weight:700}
+code{background:var(--code);border-radius:5px;padding:1px 6px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin:12px 0}
+.kv .card{margin:0;padding:12px 14px}
+.kv b{display:block;font-size:13px;color:var(--mut);font-weight:600}
+.kv span{font-size:15px;font-weight:700}
+.tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;margin-right:6px}
+.tag.net{background:#1f6feb22;color:var(--pri)}.tag.local{background:#1d7a1d22;color:var(--ok)}
+ol.steps{padding-left:20px}ol.steps li{margin:6px 0}
+.note{border-left:4px solid var(--warn);background:#b26a0012;padding:10px 14px;border-radius:0 10px 10px 0;margin:12px 0;font-size:14px}
+.note.ok{border-color:var(--ok);background:#1d7a1d12}
+.note.err{border-color:var(--err);background:#b3261e12}
+footer{margin-top:40px;text-align:center;color:var(--mut);font-size:12px}
+@media print{body{background:#fff}.wrap{max-width:100%}figure,.card{break-inside:avoid}header.hero{background:var(--pri)!important;-webkit-print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>☂️ 智能雨傂寄存櫃 · 運作說明書</h1>
+  <p>圖文版 v2.1 ｜ 2026-10-22 ｜ 適用：展覽現場技術人員、管理老師、一般用戶</p>
+</header>
+
+<div class="card">
+  <b>📌 一分鐘概覽</b>
+  <p style="margin-top:6px">櫃子通電後，<b>兩條控制路徑同時在線</b>，互為備援：</p>
+  <table>
+    <tr><th style="width:110px">路徑</th><th>訪問方式</th><th>適用場景</th></tr>
+    <tr><td><span class="tag net">互聯網</span></td><td>手機掃櫃身 QR Code → 開網站</td><td>日常使用、任何有網的地方</td></tr>
+    <tr><td><span class="tag local">本地</span></td><td>手機連櫃子熱點 <code>Umbrella</code> → 開 <code>192.168.4.1</code></td><td>展場斷網、校園網故障、現場調試</td></tr>
+  </table>
+  <p class="note ok" style="margin-bottom:0">兩者操作同一塊櫃子、同一份格位數據；任一路徑下達的指令都即時生效。<b>展場完全斷網也能正常存傂取傂。</b></p>
+</div>
+
+<h2>一、系統架構</h2>
+
+<figure>
+<svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+  <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5a6b7b"/></marker></defs>
+  <rect x="20" y="30" width="150" height="330" rx="12" fill="#1f6feb14" stroke="#1f6feb" stroke-dasharray="5 4"/>
+  <text x="95" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#1f6feb">用戶手機（互聯網）</text>
+  <rect x="38" y="66" width="114" height="46" rx="9" fill="#fff" stroke="#1f6feb"/>
+  <text x="95" y="94" text-anchor="middle" font-size="12">📱 手機 A</text>
+  <rect x="38" y="124" width="114" height="46" rx="9" fill="#fff" stroke="#1f6feb"/>
+  <text x="95" y="152" text-anchor="middle" font-size="12">📱 手機 B</text>
+  <rect x="38" y="182" width="114" height="46" rx="9" fill="#fff" stroke="#1f6feb"/>
+  <text x="95" y="210" text-anchor="middle" font-size="12">📱 手機 C</text>
+  <text x="95" y="252" text-anchor="middle" font-size="11" fill="#5a6b7b">掃 QR Code 開網站</text>
+  <text x="95" y="268" text-anchor="middle" font-size="11" fill="#5a6b7b">status.manus.space</text>
+  <rect x="290" y="110" width="180" height="120" rx="60" fill="#1f6feb18" stroke="#1f6feb"/>
+  <text x="380" y="158" text-anchor="middle" font-size="14" font-weight="700" fill="#1f6feb">☁️ 中繼伺服器</text>
+  <text x="380" y="180" text-anchor="middle" font-size="11" fill="#5a6b7b">Manus 雲端（24 小時）</text>
+  <text x="380" y="198" text-anchor="middle" font-size="11" fill="#5a6b7b">指令中轉 · 斷線緩衝 · 狀態廣播</text>
+  <line x1="170" y1="160" x2="288" y2="160" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="229" y="150" text-anchor="middle" font-size="11" fill="#5a6b7b">HTTPS/WSS</text>
+  <line x1="288" y1="180" x2="170" y2="180" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="229" y="196" text-anchor="middle" font-size="11" fill="#5a6b7b">即時狀態</text>
+  <line x1="470" y1="170" x2="566" y2="170" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="518" y="160" text-anchor="middle" font-size="11" fill="#5a6b7b">WSS 純文字協議</text>
+  <text x="518" y="186" text-anchor="middle" font-size="11" fill="#5a6b7b">store / take NNNN / open…</text>
+  <rect x="568" y="90" width="172" height="170" rx="12" fill="#1d7a1d12" stroke="#1d7a1d" stroke-width="1.6"/>
+  <text x="654" y="116" text-anchor="middle" font-size="14" font-weight="700" fill="#1d7a1d">🔧 ESP32 櫃子</text>
+  <text x="654" y="140" text-anchor="middle" font-size="11">8 格轉盤 · 取傂碼管理</text>
+  <text x="654" y="158" text-anchor="middle" font-size="11">NEMA17 馬達 + TMC2209</text>
+  <text x="654" y="176" text-anchor="middle" font-size="11">舵機 ×2 · 指示燈 ×1</text>
+  <text x="654" y="200" text-anchor="middle" font-size="11" fill="#5a6b7b">一邊連校園／場地 WiFi</text>
+  <text x="654" y="216" text-anchor="middle" font-size="11" fill="#5a6b7b">一邊開本地熱點</text>
+  <rect x="290" y="300" width="180" height="52" rx="10" fill="#1d7a1d14" stroke="#1d7a1d"/>
+  <text x="380" y="322" text-anchor="middle" font-size="12" font-weight="700" fill="#1d7a1d">📶 本地熱點 Umbrella</text>
+  <text x="380" y="340" text-anchor="middle" font-size="11" fill="#5a6b7b">密碼 12345678 · 192.168.4.1</text>
+  <rect x="38" y="308" width="114" height="46" rx="9" fill="#fff" stroke="#1d7a1d"/>
+  <text x="95" y="336" text-anchor="middle" font-size="12">📱 手機 D（本地）</text>
+  <line x1="152" y1="331" x2="288" y2="326" stroke="#1d7a1d" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+  <text x="220" y="312" text-anchor="middle" font-size="11" fill="#1d7a1d">WiFi 直連（不經雲端）</text>
+  <line x1="380" y1="300" x2="380" y2="262" stroke="#1d7a1d" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+  <text x="392" y="284" font-size="11" fill="#1d7a1d">同一塊 ESP32</text>
+</svg>
+<figcaption>圖 1｜雙路徑架構：互聯網（上）與本地熱點（下）同時在線，互為備援</figcaption>
+</figure>
+
+<div class="card">
+  <b>三個部件各做什麼</b>
+  <table>
+    <tr><th style="width:130px">部件</th><th>職責</th></tr>
+    <tr><td>ESP32 櫃子</td><td>格位管理、取傂碼生成、轉盤對位、開關門；同時連場地 WiFi + 開本地熱點</td></tr>
+    <tr><td>中繼伺服器</td><td>指令中轉；手機斷線 3 分鐘內指令仍有效、櫃子離線時指令排隊；狀態每 2 秒廣播給所有網頁</td></tr>
+    <tr><td>網站前端</td><td>用戶界面：存傂／取傂／管理／即時指令監控</td></tr>
+  </table>
+</div>
+
+<h2>二、有互聯網環境（主要模式）</h2>
+
+<h3>2.1 存傂流程</h3>
+<figure>
+<svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+  <defs><marker id="ar2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5a6b7b"/></marker></defs>
+  <g font-size="12">
+  <rect x="20" y="70" width="120" height="60" rx="10" fill="#1f6feb18" stroke="#1f6feb"/>
+  <text x="80" y="95" text-anchor="middle" font-weight="700" fill="#1f6feb">📱 用戶</text>
+  <text x="80" y="113" text-anchor="middle" font-size="11" fill="#5a6b7b">掃碼開網站</text>
+  <rect x="200" y="70" width="140" height="60" rx="10" fill="#1f6feb18" stroke="#1f6feb"/>
+  <text x="270" y="95" text-anchor="middle" font-weight="700" fill="#1f6feb">☁️ 中繼伺服器</text>
+  <text x="270" y="113" text-anchor="middle" font-size="11" fill="#5a6b7b">轉 store 給櫃子</text>
+  <rect x="400" y="70" width="150" height="60" rx="10" fill="#1d7a1d18" stroke="#1d7a1d"/>
+  <text x="475" y="95" text-anchor="middle" font-weight="700" fill="#1d7a1d">🔧 ESP32</text>
+  <text x="475" y="113" text-anchor="middle" font-size="11" fill="#5a6b7b">轉到空格 · 開門</text>
+  <rect x="610" y="70" width="130" height="60" rx="10" fill="#1d7a1d18" stroke="#1d7a1d"/>
+  <text x="675" y="95" text-anchor="middle" font-weight="700" fill="#1d7a1d">🎫 取傂碼</text>
+  <text x="675" y="113" text-anchor="middle" font-size="11" fill="#5a6b7b">網站只顯示一次</text>
+  <line x1="140" y1="100" x2="198" y2="100" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar2)"/>
+  <text x="169" y="90" text-anchor="middle" font-size="10" fill="#5a6b7b">① 按存傂</text>
+  <line x1="340" y1="100" x2="398" y2="100" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar2)"/>
+  <text x="369" y="90" text-anchor="middle" font-size="10" fill="#5a6b7b">② store</text>
+  <line x1="550" y1="100" x2="608" y2="100" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar2)"/>
+  <text x="579" y="90" text-anchor="middle" font-size="10" fill="#5a6b7b">③ 生成碼</text>
+  <line x1="608" y1="120" x2="550" y2="120" stroke="#1d7a1d" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ar2)"/>
+  <text x="579" y="140" text-anchor="middle" font-size="10" fill="#1d7a1d">④ 碼回傳</text>
+  <line x1="398" y1="130" x2="340" y2="130" stroke="#1d7a1d" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ar2)"/>
+  <line x1="198" y1="130" x2="140" y2="130" stroke="#1d7a1d" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ar2)"/>
+  <text x="80" y="175" text-anchor="middle" font-size="11" fill="#1d7a1d">⑤ 放傂 · 抄碼 · 等門關</text>
+  <text x="380" y="200" text-anchor="middle" font-size="11" fill="#5a6b7b">取傂流程相反：輸入 4 位碼 → take NNNN → 櫃子轉到對應格開門</text>
+  </g>
+</svg>
+<figcaption>圖 2｜存傂／取傂時序：全程 2-5 秒，櫃子轉盤與開門同步完成</figcaption>
+</figure>
+
+<h3>2.2 用戶端操作</h3>
+<ol class="steps">
+  <li><b>存傂</b>：按「我要存傂」→ 櫃子轉盤開門 → 網站顯示 4 位取傂碼（<b>只顯示一次，請截圖或抄下</b>）→ 放傂 → 門自動關閉</li>
+  <li><b>取傂</b>：輸入 4 位碼 → 櫃子轉到對應格、開門 → 取傂 → 門自動關閉</li>
+  <li><b>管理操作</b>（密碼 <code>8888</code>，頁面底部「管理／除錯」展開）：開門／關門／清空全部／對位 1-8 格／轉到指定格／查看各格取傂碼</li>
+  <li><b>即時指令監控</b>：頁面卡片即時顯示 ESP32 收到的每條命令與回執，當場驗證櫃子是否正常工作</li>
+</ol>
+
+<h3>2.3 斷線恢復（全自動，無需人工）</h3>
+<figure>
+<svg viewBox="0 0 760 190" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+  <defs><marker id="ar3" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5a6b7b"/></marker></defs>
+  <g font-size="12">
+  <rect x="20" y="60" width="110" height="56" rx="10" fill="#b3261e14" stroke="#b3261e"/>
+  <text x="75" y="84" text-anchor="middle" font-weight="700" fill="#b3261e">WiFi 斷線</text>
+  <text x="75" y="102" text-anchor="middle" font-size="10" fill="#5a6b7b">被 AP 踢／信號丟失</text>
+  <rect x="170" y="60" width="150" height="56" rx="10" fill="#b26a0014" stroke="#b26a00"/>
+  <text x="245" y="84" text-anchor="middle" font-weight="700" fill="#b26a00">退避重連</text>
+  <text x="245" y="102" text-anchor="middle" font-size="10" fill="#5a6b7b">5s→15s→30s→60s</text>
+  <rect x="360" y="60" width="150" height="56" rx="10" fill="#b26a0014" stroke="#b26a00"/>
+  <text x="435" y="84" text-anchor="middle" font-weight="700" fill="#b26a00">連續失敗 12 次</text>
+  <text x="435" y="102" text-anchor="middle" font-size="10" fill="#5a6b7b">自動重啟 WiFi（約 1 分鐘）</text>
+  <rect x="550" y="60" width="150" height="56" rx="10" fill="#b3261e14" stroke="#b3261e"/>
+  <text x="625" y="84" text-anchor="middle" font-weight="700" fill="#b3261e">連續失敗 24 次</text>
+  <text x="625" y="102" text-anchor="middle" font-size="10" fill="#5a6b7b">自動重開機（約 2 分鐘）</text>
+  <line x1="130" y1="88" x2="168" y2="88" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar3)"/>
+  <line x1="320" y1="88" x2="358" y2="88" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar3)"/>
+  <line x1="510" y1="88" x2="548" y2="88" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar3)"/>
+  <rect x="170" y="140" width="530" height="36" rx="18" fill="#1d7a1d14" stroke="#1d7a1d"/>
+  <text x="435" y="163" text-anchor="middle" font-weight="700" fill="#1d7a1d">✅ 任一級恢復即回到「在線」，全部自動、格位數據不丟</text>
+  <line x1="625" y1="116" x2="625" y2="140" stroke="#1d7a1d" stroke-width="1.6" marker-end="url(#ar3)"/>
+  </g>
+</svg>
+<figcaption>圖 3｜斷線自愈機制：不猛連、不卡死，最壞 2 分鐘自動復位</figcaption>
+</figure>
+
+<h3>2.4 現場診斷（技術人員）</h3>
+<table>
+  <tr><th>工具</th><th>用法</th></tr>
+  <tr><td>網站連接膠囊</td><td>綠＝櫃子在線；黃／紅＝離線（自動恢復中）</td></tr>
+  <tr><td>串口命令（COM11 @115200）</td><td><code>status</code> 完整狀態｜<code>netinfo</code> 網路診斷（帳密/MAC/失敗計數）｜<code>led test</code> 指示燈測試｜<code>newmac</code> 一鍵換 MAC</td></tr>
+  <tr><td>桌面一鍵監控</td><td>雙擊 <code>監控ESP32.bat</code> —— 即時指令流（◄ 收到 → ► 回執）</td></tr>
+  <tr><td>雲端健康檢查</td><td>瀏覽器開 <code>…/healthz/</code>，看 <code>deviceOnline</code> 是否 true</td></tr>
+</table>
+
+<h2>三、無互聯網環境（備用模式）</h2>
+
+<h3>3.1 運作原理</h3>
+<p>櫃子通電即開熱點 <b>Umbrella</b>（密碼 <code>12345678</code>）——<b>不管有沒有校園網，熱點永遠在</b>。手機連熱點 → 瀏覽器開 <code>192.168.4.1</code> → 本地控制頁（存傂／取傂／管理／WiFi 設定，功能完整）。指令不經過雲端，直達 ESP32。</p>
+
+<h3>3.2 兩種環境對比</h3>
+<table>
+  <tr><th></th><th><span class="tag net">互聯網</span></th><th><span class="tag local">本地</span></th></tr>
+  <tr><td>訪問方式</td><td>掃 QR Code／開網址</td><td>連熱點 + 輸 IP</td></tr>
+  <tr><td>同時控制人數</td><td>不限</td><td>熱點上限約 4 台</td></tr>
+  <tr><td>取傂碼顯示</td><td>網站彈出（只一次）</td><td>本地頁彈出（只一次）</td></tr>
+  <tr><td>管理密碼</td><td><code>8888</code></td><td><code>8888</code></td></tr>
+  <tr><td>斷網影響</td><td>退避後自動恢復</td><td>完全不受影響</td></tr>
+</table>
+
+<h3>3.3 展覽當天換場地 WiFi（免電腦、免燒錄）</h3>
+<figure>
+<svg viewBox="0 0 760 150" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+  <defs><marker id="ar4" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5a6b7b"/></marker></defs>
+  <g font-size="11">
+  <rect x="15" y="45" width="105" height="60" rx="10" fill="#1f6feb14" stroke="#1f6feb"/>
+  <text x="67" y="72" text-anchor="middle" font-weight="700">① 連熱點</text>
+  <text x="67" y="90" text-anchor="middle" font-size="10" fill="#5a6b7b">Umbrella / 12345678</text>
+  <rect x="140" y="45" width="105" height="60" rx="10" fill="#1f6feb14" stroke="#1f6feb"/>
+  <text x="192" y="72" text-anchor="middle" font-weight="700">② 開配網頁</text>
+  <text x="192" y="90" text-anchor="middle" font-size="10" fill="#5a6b7b">192.168.4.1/wifi</text>
+  <rect x="265" y="45" width="105" height="60" rx="10" fill="#1f6feb14" stroke="#1f6feb"/>
+  <text x="317" y="72" text-anchor="middle" font-weight="700">③ 點網絡</text>
+  <text x="317" y="90" text-anchor="middle" font-size="10" fill="#5a6b7b">自動填入名稱</text>
+  <rect x="390" y="45" width="105" height="60" rx="10" fill="#1f6feb14" stroke="#1f6feb"/>
+  <text x="442" y="72" text-anchor="middle" font-weight="700">④ 填密碼</text>
+  <text x="442" y="90" text-anchor="middle" font-size="10" fill="#5a6b7b">可顯示／隱藏</text>
+  <rect x="515" y="45" width="105" height="60" rx="10" fill="#1f6feb14" stroke="#1f6feb"/>
+  <text x="567" y="72" text-anchor="middle" font-weight="700">⑤ 儲存重啟</text>
+  <text x="567" y="90" text-anchor="middle" font-size="10" fill="#5a6b7b">按「儲存並重新啟動」</text>
+  <rect x="640" y="45" width="105" height="60" rx="10" fill="#1d7a1d14" stroke="#1d7a1d"/>
+  <text x="692" y="72" text-anchor="middle" font-weight="700" fill="#1d7a1d">⑥ 30 秒恢復</text>
+  <text x="692" y="90" text-anchor="middle" font-size="10" fill="#5a6b7b">網站恢復控制</text>
+  <line x1="120" y1="75" x2="138" y2="75" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar4)"/>
+  <line x1="245" y1="75" x2="263" y2="75" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar4)"/>
+  <line x1="370" y1="75" x2="388" y2="75" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar4)"/>
+  <line x1="495" y1="75" x2="513" y2="75" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar4)"/>
+  <line x1="620" y1="75" x2="638" y2="75" stroke="#5a6b7b" stroke-width="1.6" marker-end="url(#ar4)"/>
+  <text x="380" y="130" text-anchor="middle" font-size="11" fill="#5a6b7b">連錯了也不怕：熱點永遠在，重連熱點再設定一次即可</text>
+  </g>
+</svg>
+<figcaption>圖 4｜展覽換 WiFi 六步：全程手機操作，約 1 分鐘</figcaption>
+</figure>
+
+<h2>四、指示燈信號</h2>
+<figure>
+<svg viewBox="0 0 760 150" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+  <g font-size="11">
+  <circle cx="30" cy="40" r="9" fill="#ffd166"/><circle cx="30" cy="80" r="9" fill="#ffd166" opacity=".25"/><circle cx="30" cy="120" r="9" fill="#ffd166"/>
+  <text x="52" y="44" font-weight="700">存傂中</text><text x="120" y="44" fill="#5a6b7b">慢閃（亮 0.3s／滅 0.3s）</text>
+  <text x="52" y="84" font-weight="700">取傂中</text><text x="120" y="84" fill="#5a6b7b">快閃（亮 0.1s／滅 0.1s）</text>
+  <text x="52" y="124" font-weight="700">開門等待</text><text x="120" y="126" fill="#5a6b7b">常亮（請放傂／請取傂）</text>
+  <circle cx="330" cy="40" r="9" fill="#ffd166" opacity=".25"/><circle cx="330" cy="80" r="9" fill="#ffd166"/>
+  <text x="352" y="44" font-weight="700">完成</text><text x="410" y="44" fill="#5a6b7b">三連快閃後熄滅</text>
+  <text x="352" y="84" font-weight="700">待機（正常）</text><text x="410" y="86" fill="#5a6b7b">每 3 秒輕閃一下</text>
+  <circle cx="560" cy="40" r="9" fill="#b3261e"/><circle cx="560" cy="80" r="9" fill="#b3261e" opacity=".4"/>
+  <text x="582" y="44" font-weight="700" fill="#b3261e">中繼離線</text><text x="650" y="44" fill="#5a6b7b">每 3 秒雙閃</text>
+  <text x="582" y="84" font-weight="700" fill="#b3261e">WiFi 離線</text><text x="650" y="86" fill="#5a6b7b">每 1 秒快閃警示</text>
+  </g>
+</svg>
+<figcaption>圖 5｜一顆燈看穿櫃子狀態：現場不需屏幕也能判斷運作</figcaption>
+</figure>
+
+<h2>五、故障排查速查表</h2>
+<table>
+  <tr><th style="width:200px">症狀</th><th>最可能原因</th><th>解法</th></tr>
+  <tr><td>網站顯示「櫃子離線」</td><td>櫃子 WiFi 或中繼短暫斷線</td><td>等 2 分鐘（自愈機制自動重啟 WiFi／板子）；串口 <code>netinfo</code> 查看</td></tr>
+  <tr><td>網站卡在「連接中…」</td><td>手機網絡阻擋 WebSocket</td><td>換 WiFi／用無痕模式打開</td></tr>
+  <tr><td>櫃子很久連不上場地 WiFi</td><td>場地加密不相容或被封鎖</td><td>串口 <code>newmac</code> 換 MAC；或配網頁重新設定帳密</td></tr>
+  <tr><td>本地頁 192.168.4.1 打不開</td><td>手機沒連熱點／信號弱</td><td>確認連的是 <code>Umbrella</code>；靠近櫃子再試</td></tr>
+  <tr><td>按存傂沒反應</td><td>櫃子運作中或已滿</td><td>看指示燈；頁面查看空位數</td></tr>
+  <tr><td>取傂碼錯誤</td><td>輸錯／碼已用過</td><td>取傂碼只用一次；核對後重輸</td></tr>
+  <tr><td>展場當天完全斷網</td><td>—</td><td>走本地路徑：連 <code>Umbrella</code> → <code>192.168.4.1</code>（功能完整）</td></tr>
+</table>
+
+<h2>六、關鍵資訊卡</h2>
+<div class="kv">
+  <div class="card"><b>線上網站</b><span>umbrellahub-caozd3vf.manus.space</span></div>
+  <div class="card"><b>本地控制頁</b><span>http://192.168.4.1</span></div>
+  <div class="card"><b>本地熱點</b><span>Umbrella ／ 12345678</span></div>
+  <div class="card"><b>配網頁（換 WiFi）</b><span>192.168.4.1/wifi</span></div>
+  <div class="card"><b>管理密碼</b><span>8888</span></div>
+  <div class="card"><b>預設校園 WiFi</b><span>FCT_GUEST（WPA3）</span></div>
+  <div class="card"><b>序列埠</b><span>COM11 @115200</span></div>
+  <div class="card"><b>指令協議</b><span>store｜take NNNN｜open｜close｜home N｜go N｜clear</span></div>
+</div>
+
+<footer>智能雨傂寄存櫃 · 運作說明書（圖文版 v2.1）｜固件 v4.2-online（WPA2/WPA3 自動協商 · 退避重連 · 自癒重啟 · 一鍵換 MAC · 離線配網）｜2026-10-22</footer>
+
+</div>
+</body>
+</html>

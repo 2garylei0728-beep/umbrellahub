@@ -1,4 +1,4 @@
-/* 智能旋轉式雨傘寄存櫃 — Service Worker（PWA 離線殼）
+/* 智能旋轉式雨僘寄存櫃 — Service Worker（PWA 離線殼）
    策略：
    - 頁面導航（HTML）：網絡優先，失敗取離線殼（斷網也能開頁）
    - 靜態資源（app.js / icon / manifest）：緩存優先 + 背景更新（重複打開秒開）
@@ -41,7 +41,19 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  /* 靜態資源：緩存優先 + 背景更新 */
+  /* JS（app.js）：網絡優先——永遠拿最新代碼，消滅緩存舊版風險 */
+  if (url.pathname.endsWith('.js')) {
+    e.respondWith(
+      fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(VERSION).then((c) => c.put(req, copy));
+        return res;
+      }).catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  /* 其餘靜態資源（icon/manifest）：緩存優先 + 背景更新 */
   e.respondWith(
     caches.match(req).then((hit) => {
       const net = fetch(req).then((res) => {
